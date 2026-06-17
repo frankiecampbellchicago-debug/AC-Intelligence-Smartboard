@@ -78,6 +78,15 @@ function installCsp(): void {
 }
 
 function registerIpc(): void {
+  // --- Window controls ---
+  ipcMain.on('window:minimize', () => BrowserWindow.getFocusedWindow()?.minimize())
+  ipcMain.on('window:maximize', () => {
+    const win = BrowserWindow.getFocusedWindow()
+    if (!win) return
+    win.isMaximized() ? win.unmaximize() : win.maximize()
+  })
+  ipcMain.on('window:close', () => BrowserWindow.getFocusedWindow()?.close())
+
   // --- Projects store ---
   ipcMain.handle('store:get', () => readStore())
   ipcMain.handle('store:set', (_e, raw: unknown) => writeStore(StoreSchema.parse(raw)))

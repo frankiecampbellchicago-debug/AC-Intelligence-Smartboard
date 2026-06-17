@@ -14,6 +14,12 @@ type ThemePref = 'light' | 'dark' | 'system'
  * no fs, no shell, no ipcRenderer exposed directly.
  */
 const api = {
+  platform: process.platform,
+  window: {
+    minimize: (): void => ipcRenderer.send('window:minimize'),
+    maximize: (): void => ipcRenderer.send('window:maximize'),
+    close: (): void => ipcRenderer.send('window:close')
+  },
   store: {
     get: (): Promise<Store> => ipcRenderer.invoke('store:get'),
     set: (store: Store): Promise<Store> => ipcRenderer.invoke('store:set', store)

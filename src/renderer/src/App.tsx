@@ -46,6 +46,42 @@ function CircleBtn({
   )
 }
 
+function WindowControls(): React.JSX.Element | null {
+  if (window.api.platform !== 'win32') return null
+  return (
+    <div className="no-drag flex items-center">
+      <button
+        onClick={() => window.api.window.minimize()}
+        title="Minimize"
+        className="flex h-9 w-11 items-center justify-center text-muted transition hover:bg-white/10 hover:text-text"
+      >
+        <svg width="11" height="1" viewBox="0 0 11 1" fill="currentColor">
+          <rect width="11" height="1" />
+        </svg>
+      </button>
+      <button
+        onClick={() => window.api.window.maximize()}
+        title="Maximize"
+        className="flex h-9 w-11 items-center justify-center text-muted transition hover:bg-white/10 hover:text-text"
+      >
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1">
+          <rect x="0.5" y="0.5" width="9" height="9" />
+        </svg>
+      </button>
+      <button
+        onClick={() => window.api.window.close()}
+        title="Close"
+        className="flex h-9 w-11 items-center justify-center text-muted transition hover:bg-red-500 hover:text-white"
+      >
+        <svg width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" strokeWidth="1.2">
+          <line x1="0" y1="0" x2="10" y2="10" />
+          <line x1="10" y1="0" x2="0" y2="10" />
+        </svg>
+      </button>
+    </div>
+  )
+}
+
 function ThemeToggle(): React.JSX.Element {
   const { isDark, setPref } = useTheme()
   return (
@@ -118,7 +154,7 @@ function Topbar(): React.JSX.Element {
         </div>
       </div>
 
-      {/* Right: actions + user */}
+      {/* Right: actions + user + window controls */}
       <div className="no-drag flex shrink-0 items-center gap-2">
         <CircleBtn title="Notifications">
           <IconBell className="h-[18px] w-[18px]" />
@@ -131,6 +167,7 @@ function Topbar(): React.JSX.Element {
           K
         </div>
       </div>
+      <WindowControls />
     </header>
   )
 }
