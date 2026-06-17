@@ -174,8 +174,8 @@ export function Settings(): React.JSX.Element {
         <h3 className="font-semibold text-text">Your data</h3>
         <p className="mt-1 text-sm text-muted">
           You're tracking <span className="font-semibold text-text">{count}</span>{' '}
-          {count === 1 ? 'site' : 'sites'}. Everything is stored locally on your Mac with atomic,
-          backed-up writes — nothing leaves your machine.
+          {count === 1 ? 'site' : 'sites'}. Everything is stored locally on your machine with
+          atomic, backed-up writes — nothing leaves your machine.
         </p>
       </Card>
 

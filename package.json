@@ -15,9 +15,11 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "electron-vite preview",
     "sign:mac": "codesign --force --deep --sign - 'dist/mac-arm64/AC Intelligence Smartboard.app'",
-    "pack": "electron-vite build && electron-builder --dir && npm run sign:mac",
+    "pack": "electron-vite build && electron-builder --dir",
     "deploy:desktop": "bash scripts/deploy-desktop.sh",
-    "dist": "electron-vite build && electron-builder && npm run sign:mac",
+    "dist:mac": "electron-vite build && electron-builder --mac && npm run sign:mac",
+    "dist:win": "electron-vite build && electron-builder --win",
+    "dist": "electron-vite build && electron-builder",
     "postinstall": "electron-builder install-app-deps"
   },
   "build": {
@@ -35,6 +37,18 @@
       "target": "dmg",
       "category": "public.app-category.developer-tools",
       "icon": "build/icon.png"
+    },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     }
   },
   "dependencies": {

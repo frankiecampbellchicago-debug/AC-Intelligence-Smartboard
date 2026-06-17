@@ -14,10 +14,15 @@ const exec = promisify(execFile)
 /** All cloned sites live here. Terminal cwd is constrained to this root. */
 export const WORKSPACE_ROOT = join(homedir(), 'website-cookbook-sites')
 
-const GH_CANDIDATES = ['gh', '/opt/homebrew/bin/gh', '/usr/local/bin/gh']
+const IS_WIN = process.platform === 'win32'
 
-/** GUI-launched apps inherit a minimal PATH; restore Homebrew/local bins. */
+const GH_CANDIDATES = IS_WIN
+  ? ['gh.exe', 'gh']
+  : ['gh', '/opt/homebrew/bin/gh', '/usr/local/bin/gh']
+
+/** GUI-launched apps on macOS inherit a minimal PATH; restore Homebrew/local bins. */
 function augmentedEnv(): NodeJS.ProcessEnv {
+  if (IS_WIN) return { ...process.env }
   return { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH ?? ''}` }
 }
 
@@ -30,7 +35,8 @@ function safeCwd(cwd?: string): string {
   ensureWorkspace()
   if (!cwd) return WORKSPACE_ROOT
   const r = resolve(cwd)
-  if (r === WORKSPACE_ROOT || r.startsWith(WORKSPACE_ROOT + '/')) return r
+  const sep = IS_WIN ? '\\' : '/'
+  if (r === WORKSPACE_ROOT || r.startsWith(WORKSPACE_ROOT + sep)) return r
   return WORKSPACE_ROOT
 }
 
@@ -39,7 +45,9 @@ let counter = 0
 
 export function createTerminal(sender: WebContents, opts: TerminalCreateOpts): string {
   const cwd = safeCwd(opts.cwd)
-  const shell = process.env.SHELL || '/bin/zsh'
+  const shell = IS_WIN
+    ? (process.env.COMSPEC ?? 'powershell.exe')
+    : (process.env.SHELL ?? '/bin/zsh')
   const term = ptySpawn(shell, [], {
     name: 'xterm-color',
     cols: opts.cols ?? 80,
