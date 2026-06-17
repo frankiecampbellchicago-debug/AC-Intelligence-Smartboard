@@ -90,6 +90,7 @@ export interface GithubStatus {
   login?: string
   reason?: 'gh-not-found' | 'not-authenticated' | 'error'
   message?: string
+  additionalAccounts?: { login: string }[]
 }
 
 export interface GithubRepo {

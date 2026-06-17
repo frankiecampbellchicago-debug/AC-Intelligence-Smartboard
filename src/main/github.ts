@@ -89,12 +89,78 @@ async function listRepoPaths(fullName: string, branch: string): Promise<string[]
   }
 }
 
+function rawRepoToGithubRepo(r: RawRepo, paths: string[]): GithubRepo {
+  const pagesUrl = r.has_pages ? `https://${r.owner.login}.github.io/${r.name}/` : ''
+  const homepage = (r.homepage ?? '').trim()
+  return {
+    name: r.name,
+    fullName: r.full_name,
+    repoId: String(r.id),
+    description: r.description ?? '',
+    repoUrl: r.html_url,
+    liveUrl: homepage || pagesUrl,
+    language: r.language ?? '',
+    topics: r.topics ?? [],
+    isPrivate: r.private,
+    isFork: r.fork,
+    isArchived: r.archived,
+    pushedAt: r.pushed_at,
+    paths
+  }
+}
+
+/**
+ * Fetch repos for an additional account using a Personal Access Token directly
+ * via the GitHub REST API (no `gh` CLI required for additional accounts).
+ */
+async function listReposForToken(token: string): Promise<GithubRepo[]> {
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+  }
+  const res = await fetch(
+    'https://api.github.com/user/repos?per_page=100&sort=pushed&affiliation=owner,collaborator,organization_member',
+    { headers }
+  )
+  if (!res.ok) throw new Error(`GitHub API ${res.status}`)
+  const repos = (await res.json()) as RawRepo[]
+  const result: GithubRepo[] = []
+  for (const r of repos) {
+    const treeRes = await fetch(
+      `https://api.github.com/repos/${r.full_name}/git/trees/${r.default_branch || 'main'}?recursive=1`,
+      { headers }
+    ).catch(() => null)
+    const paths: string[] = []
+    if (treeRes?.ok) {
+      const tree = (await treeRes.json()) as { tree?: { path: string }[] }
+      if (tree.tree) paths.push(...tree.tree.map((n) => n.path).slice(0, 500))
+    }
+    result.push(rawRepoToGithubRepo(r, paths))
+  }
+  return result
+}
+
+/** Validate a PAT and return the GitHub login it belongs to. */
+export async function getLoginForToken(token: string): Promise<string> {
+  const res = await fetch('https://api.github.com/user', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    }
+  })
+  if (!res.ok) throw new Error(`GitHub API ${res.status}`)
+  const data = (await res.json()) as { login: string }
+  return data.login
+}
+
 /**
  * Fetch EVERY repo the user has access to — owned, collaborator, and org-member,
  * including forks — each with a computed live URL and (for classification) its
- * file tree.
+ * file tree. Merges repos from all additional accounts, deduped by repoId.
  */
-export async function listRepos(): Promise<GithubRepo[]> {
+export async function listRepos(additionalTokens: string[] = []): Promise<GithubRepo[]> {
   const out = await runGh([
     'api',
     'user/repos?per_page=100&sort=pushed&affiliation=owner,collaborator,organization_member',
@@ -103,25 +169,26 @@ export async function listRepos(): Promise<GithubRepo[]> {
   const repos = JSON.parse(out) as RawRepo[]
   const result: GithubRepo[] = []
   for (const r of repos) {
-    const pagesUrl = r.has_pages ? `https://${r.owner.login}.github.io/${r.name}/` : ''
-    const homepage = (r.homepage ?? '').trim()
     // Read the file tree so even forks/collaborator repos classify by real content.
     const paths = await listRepoPaths(r.full_name, r.default_branch)
-    result.push({
-      name: r.name,
-      fullName: r.full_name,
-      repoId: String(r.id),
-      description: r.description ?? '',
-      repoUrl: r.html_url,
-      liveUrl: homepage || pagesUrl,
-      language: r.language ?? '',
-      topics: r.topics ?? [],
-      isPrivate: r.private,
-      isFork: r.fork,
-      isArchived: r.archived,
-      pushedAt: r.pushed_at,
-      paths
-    })
+    result.push(rawRepoToGithubRepo(r, paths))
   }
+
+  // Fetch and merge repos from additional accounts, skip duplicates by repoId.
+  const seen = new Set(result.map((r) => r.repoId))
+  for (const token of additionalTokens) {
+    try {
+      const extra = await listReposForToken(token)
+      for (const r of extra) {
+        if (!seen.has(r.repoId)) {
+          seen.add(r.repoId)
+          result.push(r)
+        }
+      }
+    } catch {
+      // one bad token shouldn't break the whole sync
+    }
+  }
+
   return result
 }

@@ -18,10 +18,12 @@ const STORE_BAK = join(dataDir, 'projects.json.bak')
 const SETTINGS_FILE = join(dataDir, 'settings.json')
 
 export type ThemePref = 'light' | 'dark' | 'system'
+export interface GithubAccount { login: string; token: string }
 export interface Settings {
   theme: ThemePref
+  additionalGithubAccounts: GithubAccount[]
 }
-const DEFAULT_SETTINGS: Settings = { theme: 'system' }
+const DEFAULT_SETTINGS: Settings = { theme: 'system', additionalGithubAccounts: [] }
 
 function ensureDir(file: string): void {
   const dir = dirname(file)
@@ -92,7 +94,17 @@ export function readSettings(): Settings {
         parsed.theme === 'light' || parsed.theme === 'dark' || parsed.theme === 'system'
           ? parsed.theme
           : 'system'
-      return { theme }
+      const additionalGithubAccounts: GithubAccount[] = Array.isArray(
+        parsed.additionalGithubAccounts
+      )
+        ? (parsed.additionalGithubAccounts as unknown[]).filter(
+            (a): a is GithubAccount =>
+              !!a &&
+              typeof (a as GithubAccount).login === 'string' &&
+              typeof (a as GithubAccount).token === 'string'
+          )
+        : []
+      return { theme, additionalGithubAccounts }
     } catch {
       // fall through to defaults
     }

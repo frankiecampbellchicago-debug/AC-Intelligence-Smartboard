@@ -19,9 +19,14 @@ function GithubCard(): React.JSX.Element {
   const syncFromGitHub = useStore((s) => s.syncFromGitHub)
   const setView = useStore((s) => s.setView)
   const [result, setResult] = useState<string | null>(null)
+  const [addingAccount, setAddingAccount] = useState(false)
+  const [patInput, setPatInput] = useState('')
+  const [addStatus, setAddStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+  const [removing, setRemoving] = useState<string | null>(null)
 
   const connected = status?.connected
   const reason = status?.reason
+  const additionalAccounts = status?.additionalAccounts ?? []
 
   async function sync(): Promise<void> {
     setResult(null)
@@ -29,6 +34,26 @@ function GithubCard(): React.JSX.Element {
     const parts = [`${added} added`, `${updated} updated`]
     if (orphaned > 0) parts.push(`${orphaned} orphaned (gone from GitHub)`)
     setResult(`Synced — ${parts.join(', ')}.`)
+  }
+
+  async function addAccount(): Promise<void> {
+    setAddStatus(null)
+    const res = await window.api.github.addAccount(patInput.trim())
+    if (res.error) {
+      setAddStatus({ type: 'error', msg: res.error })
+    } else {
+      setAddStatus({ type: 'success', msg: `Connected @${res.login}` })
+      setPatInput('')
+      setAddingAccount(false)
+      await checkGithub()
+    }
+  }
+
+  async function removeAccount(login: string): Promise<void> {
+    setRemoving(login)
+    await window.api.github.removeAccount(login)
+    await checkGithub()
+    setRemoving(null)
   }
 
   return (
@@ -39,20 +64,84 @@ function GithubCard(): React.JSX.Element {
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold text-text">GitHub</h3>
-          {connected ? (
-            <p className="mt-0.5 text-sm text-muted">
-              Connected as{' '}
-              <span className="font-medium text-emerald">@{status?.login}</span> via the{' '}
-              <code className="rounded bg-bg px-1 py-0.5 text-xs">gh</code> CLI — no token stored.
-            </p>
+
+          {/* Primary account (gh CLI) */}
+          <div className="mt-2">
+            {connected ? (
+              <p className="text-sm text-muted">
+                <span className="font-medium text-emerald">@{status?.login}</span>
+                <span className="ml-2 text-xs text-subtle">via gh CLI · primary</span>
+              </p>
+            ) : (
+              <p className="text-sm text-muted">
+                {reason === 'gh-not-found'
+                  ? 'GitHub CLI not found. Install it and run `gh auth login`.'
+                  : reason === 'not-authenticated'
+                    ? 'GitHub CLI found but not logged in. Run `gh auth login` in your terminal.'
+                    : 'Checking connection…'}
+              </p>
+            )}
+          </div>
+
+          {/* Additional accounts */}
+          {additionalAccounts.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {additionalAccounts.map((a) => (
+                <div key={a.login} className="flex items-center gap-2">
+                  <p className="text-sm text-muted">
+                    <span className="font-medium text-emerald">@{a.login}</span>
+                    <span className="ml-2 text-xs text-subtle">via PAT</span>
+                  </p>
+                  <button
+                    onClick={() => void removeAccount(a.login)}
+                    disabled={removing === a.login}
+                    className="ml-auto text-xs text-subtle transition hover:text-red-400"
+                  >
+                    {removing === a.login ? 'Removing…' : 'Remove'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add account form */}
+          {addingAccount ? (
+            <div className="mt-3 space-y-2">
+              <p className="text-xs text-muted">
+                Create a{' '}
+                <span className="font-medium text-text">Personal Access Token</span> on GitHub
+                (Settings → Developer settings → Personal access tokens) with{' '}
+                <code className="rounded bg-bg px-1 py-0.5 text-xs">repo</code> scope, then paste
+                it here.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="password"
+                  value={patInput}
+                  onChange={(e) => setPatInput(e.target.value)}
+                  placeholder="ghp_…"
+                  className="w-72 rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-accent"
+                />
+                <Button onClick={() => void addAccount()} disabled={!patInput.trim()}>
+                  Connect
+                </Button>
+                <Button variant="ghost" onClick={() => { setAddingAccount(false); setAddStatus(null) }}>
+                  Cancel
+                </Button>
+              </div>
+              {addStatus && (
+                <p className={cn('text-sm font-medium', addStatus.type === 'error' ? 'text-red-400' : 'text-emerald')}>
+                  {addStatus.msg}
+                </p>
+              )}
+            </div>
           ) : (
-            <p className="mt-0.5 text-sm text-muted">
-              {reason === 'gh-not-found'
-                ? 'GitHub CLI not found. Install it (brew install gh) and run `gh auth login`.'
-                : reason === 'not-authenticated'
-                  ? 'GitHub CLI found but not logged in. Run `gh auth login` in your terminal.'
-                  : 'Checking connection…'}
-            </p>
+            <button
+              onClick={() => setAddingAccount(true)}
+              className="mt-3 text-xs text-muted transition hover:text-text"
+            >
+              + Add another GitHub account
+            </button>
           )}
 
           <div className="mt-4 flex flex-wrap items-center gap-3">

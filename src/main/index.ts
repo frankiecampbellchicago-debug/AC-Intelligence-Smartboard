@@ -2,7 +2,7 @@ import { app, shell, BrowserWindow, ipcMain, nativeTheme, session } from 'electr
 import { join } from 'path'
 import { readStore, writeStore, readSettings, writeSettings, type ThemePref } from './store'
 import { StoreSchema } from '../shared/types'
-import { githubStatus, listRepos } from './github'
+import { githubStatus, listRepos, getLoginForToken } from './github'
 import {
   generateImage,
   saveImage,
@@ -110,9 +110,43 @@ function registerIpc(): void {
     shell.showItemInFolder(path)
   })
 
-  // --- GitHub (via gh CLI; no token stored) ---
-  ipcMain.handle('github:status', () => githubStatus())
-  ipcMain.handle('github:listRepos', () => listRepos())
+  // --- GitHub (via gh CLI; additional accounts via PAT) ---
+  ipcMain.handle('github:status', async () => {
+    const status = await githubStatus()
+    const { additionalGithubAccounts } = readSettings()
+    return { ...status, additionalAccounts: additionalGithubAccounts.map((a) => ({ login: a.login })) }
+  })
+  ipcMain.handle('github:listRepos', () => {
+    const { additionalGithubAccounts } = readSettings()
+    return listRepos(additionalGithubAccounts.map((a) => a.token))
+  })
+  ipcMain.handle('github:addAccount', async (_e, token: unknown) => {
+    if (typeof token !== 'string' || !token.trim()) return { error: 'Invalid token' }
+    try {
+      const login = await getLoginForToken(token.trim())
+      const settings = readSettings()
+      if (settings.additionalGithubAccounts.some((a) => a.login === login))
+        return { error: `@${login} is already connected` }
+      writeSettings({
+        ...settings,
+        additionalGithubAccounts: [
+          ...settings.additionalGithubAccounts,
+          { login, token: token.trim() }
+        ]
+      })
+      return { login }
+    } catch {
+      return { error: 'Token is invalid or GitHub is unreachable' }
+    }
+  })
+  ipcMain.handle('github:removeAccount', (_e, login: unknown) => {
+    if (typeof login !== 'string') return
+    const settings = readSettings()
+    writeSettings({
+      ...settings,
+      additionalGithubAccounts: settings.additionalGithubAccounts.filter((a) => a.login !== login)
+    })
+  })
 
   // --- Embedded terminal (node-pty) + repo prep ---
   ipcMain.handle('term:create', (e, opts: TerminalCreateOpts) =>

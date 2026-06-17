@@ -50,7 +50,11 @@ const api = {
   },
   github: {
     status: (): Promise<GithubStatus> => ipcRenderer.invoke('github:status'),
-    listRepos: (): Promise<GithubRepo[]> => ipcRenderer.invoke('github:listRepos')
+    listRepos: (): Promise<GithubRepo[]> => ipcRenderer.invoke('github:listRepos'),
+    addAccount: (token: string): Promise<{ login?: string; error?: string }> =>
+      ipcRenderer.invoke('github:addAccount', token),
+    removeAccount: (login: string): Promise<void> =>
+      ipcRenderer.invoke('github:removeAccount', login)
   },
   terminal: {
     create: (opts: TerminalCreateOpts): Promise<string> => ipcRenderer.invoke('term:create', opts),
