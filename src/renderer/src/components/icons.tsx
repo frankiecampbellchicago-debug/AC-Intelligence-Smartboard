@@ -147,3 +147,123 @@ export function IconRefresh({ className = base }: IconProps): React.JSX.Element 
     </svg>
   )
 }
+export function IconGithub({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.48 0-.24-.01-.87-.01-1.7-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.56 9.56 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85 0 1.34-.01 2.42-.01 2.75 0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10z"
+      />
+    </svg>
+  )
+}
+export function IconWhiteboard({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <rect x="3" y="4" width="18" height="13" rx="2" />
+      <path d="M8 21h8M12 17v4M7 9h7M7 12.5h4" />
+    </svg>
+  )
+}
+export function IconBook({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2zM4 20a2 2 0 0 1 2-2h13M9 7h6" />
+    </svg>
+  )
+}
+export function IconLogout({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+    </svg>
+  )
+}
+export function IconInbox({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+    </svg>
+  )
+}
+export function IconMail({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="m2 7 10 6 10-6" />
+    </svg>
+  )
+}
+export function IconReply({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <path d="M9 17l-5-5 5-5M4 12h11a5 5 0 0 1 5 5v2" />
+    </svg>
+  )
+}
+export function IconArchive({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <rect x="3" y="4" width="18" height="4" rx="1" />
+      <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4" />
+    </svg>
+  )
+}
+export function IconStar({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <path d="m12 3 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 18.8 6.2 21.9l1.1-6.5L2.6 9.8l6.5-.9z" />
+    </svg>
+  )
+}
+export function IconSend({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <path d="M22 2 11 13M22 2l-7 20-4-9-9-4z" />
+    </svg>
+  )
+}
+export function IconBell({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" />
+    </svg>
+  )
+}
+export function IconHub({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <circle cx="12" cy="12" r="2.5" />
+      <circle cx="5" cy="5" r="2" />
+      <circle cx="19" cy="5" r="2" />
+      <circle cx="5" cy="19" r="2" />
+      <circle cx="19" cy="19" r="2" />
+      <path d="m10.2 10.2-3.8-3.8M13.8 10.2l3.8-3.8M10.2 13.8l-3.8 3.8M13.8 13.8l3.8 3.8" />
+    </svg>
+  )
+}
+export function IconSearch({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  )
+}
+export function IconBolt({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <path d="M13 2 4 14h7l-1 8 9-12h-7z" />
+    </svg>
+  )
+}
+export function IconGlobe({ className = base }: IconProps): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18" />
+    </svg>
+  )
+}

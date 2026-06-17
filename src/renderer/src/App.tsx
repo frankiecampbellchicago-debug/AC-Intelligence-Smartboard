@@ -2,8 +2,19 @@ import { useEffect } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { useStore } from './store/useStore'
 import { useTheme } from './lib/theme'
-import { IconSun, IconMoon } from './components/icons'
+import {
+  IconSun,
+  IconMoon,
+  IconChevronLeft,
+  IconSearch,
+  IconBell,
+  IconSettings
+} from './components/icons'
+import type { ProjectCategory } from '@shared/types'
 import { cn } from './lib/util'
+import { Hub } from './pages/Hub'
+import { Inbox } from './pages/Inbox'
+import { Whiteboard } from './pages/Whiteboard'
 import { Dashboard } from './pages/Dashboard'
 import { Wizard } from './pages/Wizard'
 import { Projects } from './pages/Projects'
@@ -12,48 +23,112 @@ import { Settings } from './pages/Settings'
 import { TerminalPage } from './pages/TerminalPage'
 import { Studio } from './pages/Studio'
 
-const TITLES: Record<string, { title: string; subtitle: string }> = {
-  dashboard: { title: 'Dashboard', subtitle: 'Your website builds at a glance' },
-  wizard: { title: 'Build Wizard', subtitle: 'The 7-level website cookbook' },
-  projects: { title: 'Projects', subtitle: 'Every site you are building' },
-  resources: { title: 'Resources', subtitle: 'Curated links from every level' },
-  settings: { title: 'Settings', subtitle: 'Preferences and appearance' },
-  terminal: { title: 'Terminal', subtitle: 'Code and edit your sites' },
-  studio: { title: 'Studio', subtitle: 'Code on the left, live site on the right' }
-}
-
 // These views render edge-to-edge and manage their own scrolling/height.
 const FULL_BLEED = new Set(['terminal', 'studio'])
 
-function ThemeToggle(): React.JSX.Element {
-  const { isDark, setPref } = useTheme()
+function CircleBtn({
+  onClick,
+  title,
+  children
+}: {
+  onClick?: () => void
+  title?: string
+  children: React.ReactNode
+}): React.JSX.Element {
   return (
     <button
-      onClick={() => setPref(isDark ? 'light' : 'dark')}
-      className="no-drag flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-muted transition hover:text-text"
-      title={isDark ? 'Switch to light' : 'Switch to dark'}
+      onClick={onClick}
+      title={title}
+      className="no-drag flex h-9 w-9 items-center justify-center rounded-full border border-border-strong bg-surface text-muted transition hover:text-text"
     >
-      {isDark ? <IconSun /> : <IconMoon />}
+      {children}
     </button>
   )
 }
 
+function ThemeToggle(): React.JSX.Element {
+  const { isDark, setPref } = useTheme()
+  return (
+    <CircleBtn onClick={() => setPref(isDark ? 'light' : 'dark')} title={isDark ? 'Light' : 'Dark'}>
+      {isDark ? <IconSun className="h-[18px] w-[18px]" /> : <IconMoon className="h-[18px] w-[18px]" />}
+    </CircleBtn>
+  )
+}
+
+const CHIPS: { label: string; cat: ProjectCategory }[] = [
+  { label: 'Websites', cat: 'website' },
+  { label: 'Automations', cat: 'automation' },
+  { label: 'Dashboards', cat: 'dashboard' },
+  { label: 'Skills', cat: 'skill' },
+  { label: 'Assistants', cat: 'assistant' }
+]
+
 function Topbar(): React.JSX.Element {
   const view = useStore((s) => s.view)
-  const t = TITLES[view]
+  const setView = useStore((s) => s.setView)
+  const selectedProjectId = useStore((s) => s.selectedProjectId)
+  const topQuery = useStore((s) => s.topQuery)
+  const setTopQuery = useStore((s) => s.setTopQuery)
+  const setHubTab = useStore((s) => s.setHubTab)
+  const canBack = Boolean(selectedProjectId) || view === 'studio'
+
+  function back(): void {
+    if (selectedProjectId) useStore.setState({ selectedProjectId: null })
+    else if (view === 'studio') setView('projects')
+  }
+
   return (
-    <header className="drag-region flex items-center justify-between px-8 pb-4 pt-6">
-      <div className="pl-16">
-        <h1 className="text-xl font-bold text-text">{t.title}</h1>
-        <p className="text-sm text-muted">{t.subtitle}</p>
+    <header className="drag-region flex items-center justify-between gap-4 px-6 pb-3 pt-5">
+      {/* Left: back + search + filter chips */}
+      <div className="no-drag flex min-w-0 flex-1 items-center gap-3">
+        {canBack && (
+          <button
+            onClick={back}
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border-strong bg-surface px-3 py-1.5 text-xs font-medium text-muted transition hover:text-text"
+          >
+            <IconChevronLeft className="h-4 w-4" /> Back
+          </button>
+        )}
+        <div className="relative w-full max-w-xs">
+          <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+          <input
+            value={topQuery}
+            onChange={(e) => setTopQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setView('hub')
+            }}
+            placeholder="Search projects…"
+            className="w-full rounded-full border border-border-strong bg-surface py-2 pl-9 pr-3 text-sm text-text outline-none focus:border-accent"
+          />
+        </div>
+        <div className="hidden items-center gap-1.5 xl:flex">
+          <span className="text-xs text-subtle">In:</span>
+          {CHIPS.map((c) => (
+            <button
+              key={c.cat}
+              onClick={() => {
+                setHubTab(c.cat)
+                setView('hub')
+              }}
+              className="rounded-full border border-border-strong bg-surface px-3 py-1 text-xs font-medium text-muted transition hover:border-text/40 hover:text-text"
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="flex items-center gap-3">
+
+      {/* Right: actions + user */}
+      <div className="no-drag flex shrink-0 items-center gap-2">
+        <CircleBtn title="Notifications">
+          <IconBell className="h-[18px] w-[18px]" />
+        </CircleBtn>
         <ThemeToggle />
-        <div className="no-drag flex items-center gap-2.5 rounded-full border border-border bg-surface py-1 pl-1 pr-3.5">
-          <div className="bg-brand flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold text-white">
-            K
-          </div>
-          <span className="text-sm font-medium text-text">Kaiden</span>
+        <CircleBtn onClick={() => setView('settings')} title="Settings">
+          <IconSettings className="h-[18px] w-[18px]" />
+        </CircleBtn>
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-sm font-bold text-[var(--ink-fg)]">
+          K
         </div>
       </div>
     </header>
@@ -74,25 +149,28 @@ export default function App(): React.JSX.Element {
       // On the very first launch, auto-pull the user's GitHub sites so the
       // dashboard isn't empty. Subsequent syncs are manual (Settings / Projects).
       const st = useStore.getState()
-      if (st.githubStatus?.connected && !localStorage.getItem('wc-autosynced')) {
+      // Key bumped to v2 when category sync (all repos, not just live sites)
+      // landed, so existing installs re-sync once to pull in automations/tools.
+      if (st.githubStatus?.connected && !localStorage.getItem('wc-autosynced-v5')) {
         try {
           await st.syncFromGitHub()
         } finally {
-          localStorage.setItem('wc-autosynced', '1')
+          localStorage.setItem('wc-autosynced-v5', '1')
         }
       }
     })()
   }, [hydrate, checkGithub])
 
   return (
-    <div className="flex h-full overflow-hidden bg-bg text-text">
+    <div className="flex h-full overflow-hidden bg-sidebar text-text">
       <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* The dashboard "life" floats as a rounded panel on the dark sidebar background. */}
+      <div className="my-3 mr-3 ml-1 flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-bg shadow-[0_10px_40px_rgba(0,0,0,0.28)]">
         <Topbar />
         <main
           className={cn(
             'min-h-0 flex-1',
-            fullBleed ? 'overflow-hidden' : 'overflow-y-auto px-8 pb-8'
+            fullBleed ? 'overflow-hidden' : 'overflow-y-auto px-6 pb-6'
           )}
         >
           {!hydrated ? (
@@ -101,6 +179,9 @@ export default function App(): React.JSX.Element {
             </div>
           ) : (
             <>
+              {view === 'hub' && <Hub />}
+              {view === 'inbox' && <Inbox />}
+              {view === 'whiteboard' && <Whiteboard />}
               {view === 'dashboard' && <Dashboard />}
               {view === 'wizard' && <Wizard />}
               {view === 'projects' && <Projects />}

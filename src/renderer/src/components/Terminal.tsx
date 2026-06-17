@@ -16,13 +16,19 @@ function cssVar(name: string, fallback: string): string {
 export function TerminalView({
   cwd,
   runClaude,
-  className
+  className,
+  onReady
 }: {
   cwd?: string
   runClaude?: boolean
   className?: string
+  /** Called once the shell is live, with a function to write into it (e.g. drag-to-inject). */
+  onReady?: (write: (data: string) => void) => void
 }): React.JSX.Element {
   const ref = useRef<HTMLDivElement>(null)
+  // Keep the latest onReady without it being an effect dependency (would recreate the pty).
+  const onReadyRef = useRef(onReady)
+  onReadyRef.current = onReady
 
   useEffect(() => {
     const host = ref.current
@@ -72,6 +78,10 @@ export function TerminalView({
       )
       term.onData((d) => {
         if (id) window.api.terminal.write(id, d)
+      })
+      // Expose a writer so the page can inject text (drag-to-terminal).
+      onReadyRef.current?.((data) => {
+        if (id) window.api.terminal.write(id, data)
       })
       window.api.terminal.resize(id, term.cols, term.rows)
       term.focus()

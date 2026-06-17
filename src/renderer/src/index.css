@@ -2,68 +2,75 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Semantic design tokens — light theme defaults. Mirrors the SaaS dashboard look. */
+/* Semantic design tokens — light theme. Sleek professional SaaS: cool neutrals + one indigo accent. */
 :root {
-  --bg: #f4f5f7;
+  --bg: #f6f7f9;
   --surface: #ffffff;
-  --surface-2: #fbfbfc;
-  --sidebar: #ffffff;
-  --border: #e9eaee;
-  --border-strong: #dcdee4;
-  --text: #161922;
-  --text-muted: #8a8f9c;
-  --text-subtle: #aeb2bd;
+  --surface-2: #f1f3f6;
+  --sidebar: #0f1218;
+  --border: #e6e8ec;
+  --border-strong: #d4d8df;
+  --text: #161a20;
+  --text-muted: #667085;
+  --text-subtle: #98a1b0;
 
-  --accent: #4f7cff;
-  --accent-soft: #eaf0ff;
-  --purple: #a855f7;
-  --amber: #f5a623;
-  --green: #22c55e;
-  --red: #ef4444;
-  --cyan: #06b6d4;
-  --emerald: #10b981;
+  --accent: #4f46e5;
+  --accent-soft: #eef0fe;
+  --purple: #7c3aed;
+  --amber: #d97706;
+  --green: #059669;
+  --red: #dc2626;
+  --cyan: #0891b2;
+  --emerald: #059669;
 
-  --shadow: 0 1px 2px rgba(16, 19, 31, 0.04), 0 8px 24px rgba(16, 19, 31, 0.06);
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 4px 14px rgba(16, 24, 40, 0.07);
 
-  /* Brand + extended palette */
-  --indigo: #6366f1;
-  --violet: #8b5cf6;
-  --pink: #ec4899;
-  --orange: #f97316;
-  --brand-from: #6366f1;
-  --brand-via: #8b5cf6;
-  --brand-to: #ec4899;
+  /* Ink (near-black primary buttons) — inverts in dark so contrast holds. */
+  --ink: #111827;
+  --ink-fg: #ffffff;
+
+  --indigo: #4f46e5;
+  --violet: #7c3aed;
+  --pink: #db2777;
+  --orange: #ea580c;
+  --brand-from: #4f46e5;
+  --brand-via: #6366f1;
+  --brand-to: #818cf8;
 }
 
 .dark {
-  --bg: #0f1117;
-  --surface: #171a22;
-  --surface-2: #1b1f29;
-  --sidebar: #12141b;
-  --border: #262a35;
-  --border-strong: #313643;
-  --text: #f3f4f7;
-  --text-muted: #9499a8;
-  --text-subtle: #6b7180;
+  --bg: #0c0e12;
+  --surface: #14171c;
+  --surface-2: #1a1e24;
+  --sidebar: #08090c;
+  --border: #232830;
+  --border-strong: #2f3640;
+  --text: #f2f4f7;
+  --text-muted: #98a1b0;
+  --text-subtle: #667085;
 
-  --accent: #5b85ff;
-  --accent-soft: #1c2540;
-  --purple: #b066f9;
-  --amber: #f5b53d;
-  --green: #2fd06f;
-  --red: #f15a5a;
-  --cyan: #1fc4dd;
-  --emerald: #1ec98a;
+  --accent: #818cf8;
+  --accent-soft: #1e1b4b;
+  --purple: #a78bfa;
+  --amber: #f59e0b;
+  --green: #34d399;
+  --red: #f87171;
+  --cyan: #22d3ee;
+  --emerald: #34d399;
 
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px rgba(0, 0, 0, 0.35);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.5);
+
+  /* Ink pill inverts to a light pill with dark text in dark mode. */
+  --ink: #f2f4f7;
+  --ink-fg: #111827;
 
   --indigo: #818cf8;
   --violet: #a78bfa;
   --pink: #f472b6;
   --orange: #fb923c;
   --brand-from: #6366f1;
-  --brand-via: #8b5cf6;
-  --brand-to: #ec4899;
+  --brand-via: #818cf8;
+  --brand-to: #a5b4fc;
 }
 
 /* Expose tokens to Tailwind so utilities like bg-surface / text-muted work. */
@@ -91,6 +98,11 @@
   --color-orange: var(--orange);
 }
 
+/* Ink pill (intelly-style primary buttons). */
+.bg-ink {
+  background-color: var(--ink);
+}
+
 /* Brand gradient helpers */
 .bg-brand {
   background-image: linear-gradient(135deg, var(--brand-from), var(--brand-via), var(--brand-to));
@@ -102,7 +114,7 @@
   color: transparent;
 }
 .ring-brand {
-  box-shadow: 0 6px 18px -4px color-mix(in srgb, var(--violet) 55%, transparent);
+  box-shadow: 0 5px 16px -5px color-mix(in srgb, var(--accent) 50%, transparent);
 }
 
 html,
@@ -116,9 +128,59 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family:
-    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Headings: clean, tight sans for a sleek, professional feel. */
+.font-display {
+  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Whiteboard surface — a faint dotted grid you "write" on. */
+.whiteboard-bg {
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--text) 9%, transparent) 1px,
+    transparent 1.4px
+  );
+  background-size: 22px 22px;
+}
+
+/* Reflective glass widget — translucent, blurred, with a sheen and a hover light-flash + pop. */
+.widget {
+  position: relative;
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  box-shadow: var(--shadow);
+  transition:
+    transform 0.28s cubic-bezier(0.2, 0.7, 0.3, 1),
+    box-shadow 0.3s ease,
+    border-color 0.25s ease;
+}
+/* Glass reflection sheen across the top-left. */
+.widget::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, #fff 16%, transparent) 0%,
+    transparent 42%
+  );
+}
+.widget:hover {
+  transform: translateY(-5px) scale(1.012);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow:
+    0 22px 50px -16px rgba(2, 6, 23, 0.55),
+    0 0 30px -2px color-mix(in srgb, var(--accent) 50%, transparent);
 }
 
 /* Thin, themed scrollbars to match the polished look. */

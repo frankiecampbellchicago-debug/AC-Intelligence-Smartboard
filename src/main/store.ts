@@ -1,7 +1,7 @@
 import { app } from 'electron'
 import { existsSync, readFileSync, writeFileSync, renameSync, copyFileSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
-import { EMPTY_STORE, StoreSchema, type Store } from '../shared/types'
+import { CURRENT_SCHEMA_VERSION, EMPTY_STORE, StoreSchema, type Store } from '../shared/types'
 
 /**
  * Atomic, validated JSON persistence for the projects store.
@@ -35,9 +35,24 @@ function atomicWrite(file: string, contents: string): void {
   renameSync(tmp, file)
 }
 
+/**
+ * Forward-migrate an older persisted document to the current schema.
+ * v1 -> v2: just bump the version. The new per-project fields (category,
+ * categoryLocked, topics, repoId, syncState, lastSyncedAt) are filled by
+ * their Zod defaults on parse — legacy projects were all live websites, so
+ * `category` correctly defaults to 'website'. We bump explicitly (rather
+ * than relying on a literal that would reject v1 and trigger a data wipe).
+ */
+function migrate(doc: unknown): unknown {
+  if (!doc || typeof doc !== 'object') return doc
+  const obj = doc as { schemaVersion?: unknown }
+  if (obj.schemaVersion === CURRENT_SCHEMA_VERSION) return doc
+  return { ...obj, schemaVersion: CURRENT_SCHEMA_VERSION }
+}
+
 function parseStore(raw: string): Store | null {
   try {
-    return StoreSchema.parse(JSON.parse(raw))
+    return StoreSchema.parse(migrate(JSON.parse(raw)))
   } catch {
     return null
   }

@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, Button } from '../components/ui'
 import { useTheme, type ThemePref } from '../lib/theme'
 import { cn } from '../lib/util'
 import { useStore } from '../store/useStore'
-import { IconGit, IconCheck } from '../components/icons'
+import { useWhiteboard } from '../store/useWhiteboard'
+import { IconGit, IconCheck, IconWizard } from '../components/icons'
 
 const THEMES: { id: ThemePref; label: string }[] = [
   { id: 'light', label: 'Light' },
@@ -24,9 +25,9 @@ function GithubCard(): React.JSX.Element {
 
   async function sync(): Promise<void> {
     setResult(null)
-    const { added, updated, removed } = await syncFromGitHub()
+    const { added, updated, orphaned } = await syncFromGitHub()
     const parts = [`${added} added`, `${updated} updated`]
-    if (removed > 0) parts.push(`${removed} removed (no live site)`)
+    if (orphaned > 0) parts.push(`${orphaned} orphaned (gone from GitHub)`)
     setResult(`Synced — ${parts.join(', ')}.`)
   }
 
@@ -81,6 +82,67 @@ function GithubCard(): React.JSX.Element {
   )
 }
 
+function ApiKeyCard(): React.JSX.Element {
+  const checkKey = useWhiteboard((s) => s.checkKey)
+  const [has, setHas] = useState(false)
+  const [key, setKey] = useState('')
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    void window.api.settings.hasApiKey().then(setHas)
+  }, [])
+
+  async function save(): Promise<void> {
+    const ok = await window.api.settings.setApiKey(key.trim())
+    setHas(ok)
+    setKey('')
+    setSaved(true)
+    void checkKey()
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-text/5 text-text">
+          <IconWizard className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-text">Image generation (OpenRouter)</h3>
+          <p className="mt-0.5 text-sm text-muted">
+            Powers the Whiteboard's image generation via the Gemini “nano banana” model. Your key is
+            stored locally on this Mac only — never sent anywhere but OpenRouter.
+          </p>
+          {has ? (
+            <div className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-emerald">
+              <IconCheck className="h-4 w-4" /> Key configured — generation is enabled.
+            </div>
+          ) : (
+            <div className="mt-2 text-sm text-amber">No key set — add one to generate images.</div>
+          )}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <input
+              type="password"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              placeholder="sk-or-v1-…"
+              className="w-72 rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-accent"
+            />
+            <Button onClick={() => void save()} disabled={!key.trim()}>
+              Save key
+            </Button>
+            {saved && (
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald">
+                <IconCheck className="h-4 w-4" /> Saved
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
 export function Settings(): React.JSX.Element {
   const { pref, setPref } = useTheme()
   const count = useStore((s) => s.projects.length)
@@ -88,6 +150,7 @@ export function Settings(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-2xl space-y-5">
       <GithubCard />
+      <ApiKeyCard />
       <Card className="p-6">
         <h3 className="font-semibold text-text">Appearance</h3>
         <p className="mb-4 mt-1 text-sm text-muted">Choose how Website Cookbook looks.</p>

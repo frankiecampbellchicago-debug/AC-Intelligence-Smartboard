@@ -4,6 +4,14 @@ import { readStore, writeStore, readSettings, writeSettings, type ThemePref } fr
 import { StoreSchema } from '../shared/types'
 import { githubStatus, listRepos } from './github'
 import {
+  generateImage,
+  saveImage,
+  readWhiteboard,
+  writeWhiteboard,
+  hasApiKey,
+  setApiKey
+} from './whiteboard'
+import {
   createTerminal,
   writeTerminal,
   resizeTerminal,
@@ -20,7 +28,7 @@ function resolveBackground(): string {
   const { theme } = readSettings()
   const dark =
     theme === 'dark' || (theme === 'system' && nativeTheme.shouldUseDarkColors)
-  return dark ? '#0f1117' : '#f4f5f7'
+  return dark ? '#0f1620' : '#eef1f5'
 }
 
 function createWindow(): void {
@@ -107,6 +115,19 @@ function registerIpc(): void {
   )
   ipcMain.on('term:kill', (_e, p: { id: string }) => killTerminal(p.id))
   ipcMain.handle('studio:prepareRepo', (_e, repoFullName: string) => prepareRepo(repoFullName))
+
+  // --- Whiteboard: image generation + persistence + local API key ---
+  ipcMain.handle('image:generate', (_e, prompt: string) => generateImage(prompt))
+  ipcMain.handle('image:save', (_e, p: { dataUrl: string; name: string }) =>
+    saveImage(p.dataUrl, p.name)
+  )
+  ipcMain.handle('wb:get', () => readWhiteboard())
+  ipcMain.handle('wb:set', (_e, data: unknown) => writeWhiteboard(data))
+  ipcMain.handle('settings:hasApiKey', () => hasApiKey())
+  ipcMain.handle('settings:setApiKey', (_e, key: string) => {
+    setApiKey(key)
+    return hasApiKey()
+  })
 }
 
 /** Lock down any <webview> the renderer attaches (used for live site previews). */

@@ -48,6 +48,7 @@ export async function githubStatus(): Promise<GithubStatus> {
 }
 
 interface RawRepo {
+  id: number
   name: string
   full_name: string
   description: string | null
@@ -55,10 +56,37 @@ interface RawRepo {
   homepage: string | null
   has_pages: boolean
   language: string | null
+  topics?: string[]
   private: boolean
   fork: boolean
+  archived: boolean
   pushed_at: string
+  default_branch: string
   owner: { login: string }
+}
+
+/**
+ * Fetch a repo's file tree (paths only) so we can classify it by what's
+ * actually in it — e.g. a SKILL.md means it's a Claude skill, not a website.
+ * One git-tree call per repo; resilient to empty repos / API errors.
+ */
+async function listRepoPaths(fullName: string, branch: string): Promise<string[]> {
+  const ref = branch || 'main'
+  try {
+    const out = await runGh([
+      'api',
+      `repos/${fullName}/git/trees/${ref}?recursive=1`,
+      '--jq',
+      '.tree[].path'
+    ])
+    return out
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 500)
+  } catch {
+    return []
+  }
 }
 
 /** Fetch the authenticated user's repos with a computed live URL for each. */
@@ -69,19 +97,27 @@ export async function listRepos(): Promise<GithubRepo[]> {
     '--paginate'
   ])
   const repos = JSON.parse(out) as RawRepo[]
-  return repos.map((r) => {
+  const result: GithubRepo[] = []
+  for (const r of repos) {
     const pagesUrl = r.has_pages ? `https://${r.owner.login}.github.io/${r.name}/` : ''
     const homepage = (r.homepage ?? '').trim()
-    return {
+    // Read the file tree (skip forks — they aren't the user's own work).
+    const paths = r.fork ? [] : await listRepoPaths(r.full_name, r.default_branch)
+    result.push({
       name: r.name,
       fullName: r.full_name,
+      repoId: String(r.id),
       description: r.description ?? '',
       repoUrl: r.html_url,
       liveUrl: homepage || pagesUrl,
       language: r.language ?? '',
+      topics: r.topics ?? [],
       isPrivate: r.private,
       isFork: r.fork,
-      pushedAt: r.pushed_at
-    }
-  })
+      isArchived: r.archived,
+      pushedAt: r.pushed_at,
+      paths
+    })
+  }
+  return result
 }

@@ -1,19 +1,24 @@
 import type { ReactNode } from 'react'
-import type { ProjectStatus } from '@shared/types'
-import { STATUS_LABELS } from '@shared/types'
+import type { ProjectCategory, ProjectStatus } from '@shared/types'
+import { CATEGORY_LABELS, PROJECT_CATEGORIES, STATUS_LABELS } from '@shared/types'
 import { cn } from '../lib/util'
 
 export function Card({
   children,
-  className
+  className,
+  interactive = true
 }: {
   children: ReactNode
   className?: string
+  /** Hover "pop" lift. Defaults on; disable for modals/static containers. */
+  interactive?: boolean
 }): React.JSX.Element {
   return (
     <div
       className={cn(
-        'rounded-2xl border border-border bg-surface shadow-[var(--shadow)]',
+        'rounded-xl border border-border bg-surface shadow-[var(--shadow)] transition duration-200',
+        interactive &&
+          'hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[0_14px_34px_-10px_rgba(20,30,48,0.22)]',
         className
       )}
     >
@@ -39,6 +44,67 @@ export function StatusBadge({ status }: { status: ProjectStatus }): React.JSX.El
       <span className="h-1.5 w-1.5 rounded-full" style={{ background: s.dot }} />
       {STATUS_LABELS[status]}
     </span>
+  )
+}
+
+/** Per-category accent color, reused by the badge, hub tabs, and dashboard. */
+export const CATEGORY_COLOR: Record<ProjectCategory, string> = {
+  website: 'var(--emerald)',
+  automation: 'var(--violet)',
+  dashboard: 'var(--cyan)',
+  skill: 'var(--amber)',
+  assistant: 'var(--indigo)',
+  other: 'var(--text-subtle)'
+}
+
+export function CategoryBadge({
+  category,
+  className
+}: {
+  category: ProjectCategory
+  className?: string
+}): React.JSX.Element {
+  const color = CATEGORY_COLOR[category]
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+        className
+      )}
+      style={{ background: `color-mix(in srgb, ${color} 16%, transparent)`, color }}
+    >
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
+      {CATEGORY_LABELS[category]}
+    </span>
+  )
+}
+
+/** Inline dropdown to reassign a project's category. Stops row-click propagation. */
+export function CategorySelect({
+  value,
+  onChange,
+  className
+}: {
+  value: ProjectCategory
+  onChange: (c: ProjectCategory) => void
+  className?: string
+}): React.JSX.Element {
+  return (
+    <select
+      value={value}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => onChange(e.target.value as ProjectCategory)}
+      className={cn(
+        'rounded-lg border border-border bg-bg px-2 py-1 text-xs font-medium text-text outline-none focus:border-accent',
+        className
+      )}
+    >
+      {PROJECT_CATEGORIES.map((c) => (
+        <option key={c} value={c}>
+          {CATEGORY_LABELS[c]}
+        </option>
+      ))}
+    </select>
   )
 }
 
@@ -77,9 +143,9 @@ export function Button({
   disabled?: boolean
 }): React.JSX.Element {
   const styles = {
-    primary: 'bg-brand ring-brand text-white hover:opacity-95',
+    primary: 'bg-ink text-[var(--ink-fg)] hover:opacity-90',
     ghost: 'text-muted hover:text-text hover:bg-bg',
-    subtle: 'bg-bg text-text border border-border hover:border-border-strong',
+    subtle: 'bg-surface text-text border border-border-strong hover:border-text/40',
     danger: 'text-red hover:bg-red/10'
   }[variant]
   return (
@@ -88,7 +154,7 @@ export function Button({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-50',
         styles,
         className
       )}

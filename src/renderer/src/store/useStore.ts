@@ -1,7 +1,19 @@
 import { create } from 'zustand'
-import type { GithubStatus, Project, ProjectStatus, Store } from '@shared/types'
+import type { GithubStatus, Project, ProjectCategory, ProjectStatus, Store } from '@shared/types'
+import { CURRENT_SCHEMA_VERSION } from '@shared/types'
+import { reconcileProjects } from '@shared/reconcile'
 
-type View = 'dashboard' | 'wizard' | 'projects' | 'resources' | 'settings' | 'terminal' | 'studio'
+type View =
+  | 'hub'
+  | 'dashboard'
+  | 'inbox'
+  | 'whiteboard'
+  | 'wizard'
+  | 'projects'
+  | 'resources'
+  | 'settings'
+  | 'terminal'
+  | 'studio'
 
 export interface NewProjectInput {
   name: string
@@ -11,7 +23,16 @@ export interface NewProjectInput {
   repoUrl?: string
   localPath?: string
   notes?: string
+  category?: ProjectCategory
 }
+
+export interface SyncResult {
+  added: number
+  updated: number
+  orphaned: number
+}
+
+export type HubTab = 'all' | ProjectCategory | 'orphaned'
 
 interface AppState {
   // navigation
@@ -22,6 +43,12 @@ interface AppState {
   openProject: (id: string) => void
   openStudio: (id: string) => void
 
+  // shared UI state (top bar search + hub filter)
+  topQuery: string
+  setTopQuery: (q: string) => void
+  hubTab: HubTab
+  setHubTab: (t: HubTab) => void
+
   // data
   hydrated: boolean
   projects: Project[]
@@ -29,14 +56,17 @@ interface AppState {
   addProject: (input: NewProjectInput) => Project
   updateProject: (id: string, patch: Partial<Project>) => void
   removeProject: (id: string) => void
+  setCategory: (id: string, category: ProjectCategory) => void
+  removeOrphaned: () => number
   toggleSkill: (id: string, level: number, skillId: string) => void
   touchOpened: (id: string) => void
 
   // github
   githubStatus: GithubStatus | null
   githubSyncing: boolean
+  lastSync: SyncResult | null
   checkGithub: () => Promise<void>
-  syncFromGitHub: () => Promise<{ added: number; updated: number; removed: number }>
+  syncFromGitHub: () => Promise<SyncResult>
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null
@@ -45,7 +75,7 @@ let saveTimer: ReturnType<typeof setTimeout> | null = null
 function schedulePersist(projects: Project[]): void {
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
-    const payload: Store = { schemaVersion: 1, projects }
+    const payload: Store = { schemaVersion: CURRENT_SCHEMA_VERSION, projects }
     void window.api.store.set(payload)
   }, 400)
 }
@@ -65,6 +95,11 @@ export const useStore = create<AppState>((set, get) => ({
     get().touchOpened(id)
     set({ view: 'studio', studioProjectId: id })
   },
+
+  topQuery: '',
+  setTopQuery: (q) => set({ topQuery: q }),
+  hubTab: 'all',
+  setHubTab: (t) => set({ hubTab: t }),
 
   hydrated: false,
   projects: [],
@@ -87,7 +122,14 @@ export const useStore = create<AppState>((set, get) => ({
       levelProgress: {},
       source: 'manual',
       repoFullName: '',
+      repoId: '',
       language: '',
+      topics: [],
+      // A category chosen in the form is a deliberate choice → lock it.
+      category: input.category ?? 'website',
+      categoryLocked: input.category != null,
+      syncState: 'active',
+      lastSyncedAt: 0,
       createdAt: ts,
       updatedAt: ts,
       lastOpenedAt: ts
@@ -111,6 +153,26 @@ export const useStore = create<AppState>((set, get) => ({
     const selectedProjectId = get().selectedProjectId === id ? null : get().selectedProjectId
     set({ projects, selectedProjectId })
     schedulePersist(projects)
+  },
+
+  setCategory: (id, category) => {
+    // A manual pick locks the category so the next sync won't re-infer it.
+    const projects = get().projects.map((p) =>
+      p.id === id ? { ...p, category, categoryLocked: true, updatedAt: now() } : p
+    )
+    set({ projects })
+    schedulePersist(projects)
+  },
+
+  removeOrphaned: () => {
+    const before = get().projects.length
+    const projects = get().projects.filter((p) => p.syncState !== 'orphaned')
+    const removed = before - projects.length
+    if (removed > 0) {
+      set({ projects })
+      schedulePersist(projects)
+    }
+    return removed
   },
 
   toggleSkill: (id, level, skillId) => {
@@ -137,6 +199,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   githubStatus: null,
   githubSyncing: false,
+  lastSync: null,
   checkGithub: async () => {
     try {
       const status = await window.api.github.status()
@@ -149,61 +212,28 @@ export const useStore = create<AppState>((set, get) => ({
   syncFromGitHub: async () => {
     set({ githubSyncing: true })
     try {
-      // Only repos with a live URL count as websites; skip everything else.
-      const repos = (await window.api.github.listRepos()).filter((r) => r.liveUrl)
-      const liveNames = new Set(repos.map((r) => r.fullName))
-      const ts = now()
+      // Import ALL owned repos (forks are filtered inside reconcileProjects),
+      // auto-categorize, and merge with existing projects.
+      const repos = await window.api.github.listRepos()
 
-      // Drop GitHub-sourced projects that no longer map to a live site
-      // (non-website repos, or repos whose Pages were turned off). Manual projects stay.
-      const before = get().projects.length
-      const projects = get().projects.filter(
-        (p) => p.source !== 'github' || liveNames.has(p.repoFullName)
-      )
-      const removed = before - projects.length
-
-      let added = 0
-      let updated = 0
-      for (const r of repos) {
-        const idx = projects.findIndex((p) => p.repoFullName === r.fullName)
-        if (idx >= 0) {
-          // Refresh repo-derived fields but preserve the user's own edits.
-          const ex = projects[idx]
-          projects[idx] = {
-            ...ex,
-            repoUrl: r.repoUrl,
-            liveUrl: ex.liveUrl || r.liveUrl,
-            language: r.language,
-            updatedAt: ts
-          }
-          updated++
-        } else {
-          const isTest = /test|staging|sandbox|demo/i.test(r.name)
-          const status: ProjectStatus = isTest ? 'review' : 'shipped'
-          const currentLevel = isTest ? 4 : 7
-          projects.unshift({
-            id: crypto.randomUUID(),
-            name: r.name,
-            currentLevel,
-            status,
-            liveUrl: r.liveUrl,
-            repoUrl: r.repoUrl,
-            localPath: '',
-            notes: r.description,
-            levelProgress: {},
-            source: 'github',
-            repoFullName: r.fullName,
-            language: r.language,
-            createdAt: ts,
-            updatedAt: ts,
-            lastOpenedAt: ts
-          })
-          added++
-        }
+      // Guard: a transient gh failure / empty response must NOT orphan everything.
+      if (!repos || repos.length === 0) {
+        const result: SyncResult = { added: 0, updated: 0, orphaned: 0 }
+        set({ lastSync: result })
+        return result
       }
-      set({ projects })
+
+      const ts = now()
+      const { projects, added, updated, orphaned } = reconcileProjects(
+        repos,
+        get().projects,
+        ts,
+        () => crypto.randomUUID()
+      )
+      const result: SyncResult = { added, updated, orphaned }
+      set({ projects, lastSync: result })
       schedulePersist(projects)
-      return { added, updated, removed }
+      return result
     } finally {
       set({ githubSyncing: false })
     }

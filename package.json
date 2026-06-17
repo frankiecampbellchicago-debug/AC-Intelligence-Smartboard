@@ -14,14 +14,15 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "electron-vite preview",
-    "sign:mac": "codesign --force --deep --sign - 'dist/mac-arm64/Website Cookbook.app'",
+    "sign:mac": "codesign --force --deep --sign - 'dist/mac-arm64/AC Intelligence Smartboard.app'",
     "pack": "electron-vite build && electron-builder --dir && npm run sign:mac",
+    "deploy:desktop": "bash scripts/deploy-desktop.sh",
     "dist": "electron-vite build && electron-builder && npm run sign:mac",
     "postinstall": "electron-builder install-app-deps"
   },
   "build": {
     "appId": "com.kaiden.websitecookbook",
-    "productName": "Website Cookbook",
+    "productName": "AC Intelligence Smartboard",
     "files": [
       "out/**/*",
       "!node_modules/**/*",
@@ -32,10 +33,14 @@
     ],
     "mac": {
       "target": "dmg",
-      "category": "public.app-category.developer-tools"
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.png"
     }
   },
   "dependencies": {
+    "@fontsource/fraunces": "^5.2.9",
+    "@fontsource/libre-bodoni": "^5.2.7",
+    "@fontsource/public-sans": "^5.2.7",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "node-pty": "^1.1.0",

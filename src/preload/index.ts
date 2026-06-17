@@ -22,7 +22,19 @@ const api = {
     get: (): Promise<{ theme: ThemePref }> => ipcRenderer.invoke('settings:get'),
     setTheme: (theme: ThemePref): Promise<{ theme: ThemePref }> =>
       ipcRenderer.invoke('settings:setTheme', theme),
-    shouldUseDark: (): Promise<boolean> => ipcRenderer.invoke('theme:shouldUseDark')
+    shouldUseDark: (): Promise<boolean> => ipcRenderer.invoke('theme:shouldUseDark'),
+    hasApiKey: (): Promise<boolean> => ipcRenderer.invoke('settings:hasApiKey'),
+    setApiKey: (key: string): Promise<boolean> => ipcRenderer.invoke('settings:setApiKey', key)
+  },
+  image: {
+    generate: (prompt: string): Promise<{ dataUrl?: string; error?: string }> =>
+      ipcRenderer.invoke('image:generate', prompt),
+    save: (dataUrl: string, name: string): Promise<{ path?: string; error?: string }> =>
+      ipcRenderer.invoke('image:save', { dataUrl, name })
+  },
+  whiteboard: {
+    get: (): Promise<{ items: unknown[] }> => ipcRenderer.invoke('wb:get'),
+    set: (data: unknown): Promise<void> => ipcRenderer.invoke('wb:set', data)
   },
   shell: {
     openExternal: (url: string): Promise<void> => ipcRenderer.invoke('shell:openExternal', url),

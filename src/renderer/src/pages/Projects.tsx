@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { useStore, type NewProjectInput } from '../store/useStore'
-import { Card, Button, StatusBadge, LevelPill } from '../components/ui'
+import { Card, Button, StatusBadge, LevelPill, CategoryBadge } from '../components/ui'
 import { LEVELS, TOTAL_LEVELS } from '@shared/levels'
 import {
   PROJECT_STATUSES,
   STATUS_LABELS,
+  PROJECT_CATEGORIES,
+  CATEGORY_LABELS,
   type Project,
-  type ProjectStatus
+  type ProjectStatus,
+  type ProjectCategory
 } from '@shared/types'
 import { openExternal, revealPath, relativeTime, cn } from '../lib/util'
 import { SitePreview } from '../components/SitePreview'
@@ -34,6 +37,7 @@ function ProjectForm({
 }): React.JSX.Element {
   const [name, setName] = useState(initial?.name ?? '')
   const [status, setStatus] = useState<ProjectStatus>(initial?.status ?? 'planning')
+  const [category, setCategory] = useState<ProjectCategory>(initial?.category ?? 'website')
   const [currentLevel, setCurrentLevel] = useState(initial?.currentLevel ?? 1)
   const [liveUrl, setLiveUrl] = useState(initial?.liveUrl ?? '')
   const [repoUrl, setRepoUrl] = useState(initial?.repoUrl ?? '')
@@ -47,17 +51,17 @@ function ProjectForm({
   function submit(e: React.FormEvent): void {
     e.preventDefault()
     if (!name.trim()) return
-    onSave({ name, status, currentLevel, liveUrl, repoUrl, localPath, notes })
+    onSave({ name, status, category, currentLevel, liveUrl, repoUrl, localPath, notes })
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-5"
       onClick={onClose}
     >
-      <Card className="w-full max-w-lg p-6" >
+      <Card interactive={false} className="w-full max-w-lg p-5" >
         <form onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-          <h2 className="mb-5 text-lg font-bold text-text">
+          <h2 className="mb-4 text-lg font-bold text-text">
             {initial ? 'Edit site' : 'Add a site'}
           </h2>
           <div className="space-y-4">
@@ -70,6 +74,20 @@ function ProjectForm({
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Acme Contracting"
               />
+            </div>
+            <div>
+              <label className={labelCls}>Category</label>
+              <select
+                className={field}
+                value={category}
+                onChange={(e) => setCategory(e.target.value as ProjectCategory)}
+              >
+                {PROJECT_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {CATEGORY_LABELS[c]}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -188,7 +206,7 @@ function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-4">
       <button
         onClick={back}
         className="inline-flex items-center gap-1 text-sm font-medium text-muted hover:text-text"
@@ -196,12 +214,13 @@ function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
         <IconChevronLeft className="h-4 w-4" /> All projects
       </button>
 
-      <Card className="p-6">
+      <Card className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
               <h2 className="text-2xl font-bold text-text">{project.name}</h2>
               <StatusBadge status={project.status} />
+              <CategoryBadge category={project.category} />
             </div>
             <div className="mt-1 text-sm text-muted">
               Level {project.currentLevel} of {TOTAL_LEVELS} ·{' '}
@@ -232,7 +251,7 @@ function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
         </div>
 
         {/* Links */}
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           {project.liveUrl && (
             <LinkChip
               label="Live site"
@@ -256,14 +275,14 @@ function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
         </div>
 
         {project.notes && (
-          <p className="mt-5 whitespace-pre-wrap rounded-xl bg-bg p-4 text-sm text-text">
+          <p className="mt-4 whitespace-pre-wrap rounded-xl bg-bg p-4 text-sm text-text">
             {project.notes}
           </p>
         )}
       </Card>
 
       {/* Level progress */}
-      <Card className="p-6">
+      <Card className="p-5">
         <div className="mb-1 flex items-center justify-between">
           <h3 className="font-semibold text-text">Level progress</h3>
           <button
@@ -336,7 +355,8 @@ function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
           initial={project}
           onClose={() => setEditing(false)}
           onSave={(data) => {
-            updateProject(project.id, data)
+            // Editing details is a deliberate category choice — lock it from re-sync.
+            updateProject(project.id, { ...data, categoryLocked: true })
             setEditing(false)
           }}
         />
@@ -361,8 +381,9 @@ function SiteCard({ project }: { project: Project }): React.JSX.Element {
           className="absolute inset-0 transition group-hover:bg-accent/5"
           aria-label={`Open ${project.name}`}
         />
-        <div className="absolute left-3 top-3">
+        <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
           <StatusBadge status={project.status} />
+          <CategoryBadge category={project.category} />
         </div>
         {project.source === 'github' && (
           <div className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur">
@@ -429,7 +450,7 @@ export function Projects(): React.JSX.Element {
   const connected = githubStatus?.connected
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">
           {projects.length} {projects.length === 1 ? 'site' : 'sites'} tracked
@@ -469,7 +490,7 @@ export function Projects(): React.JSX.Element {
               ? 'Sync your GitHub repos to pull in your sites, or add one manually.'
               : 'Add your first website to track it through the 7 levels.'}
           </p>
-          <div className="mt-5 flex justify-center gap-3">
+          <div className="mt-4 flex justify-center gap-3">
             {connected && (
               <Button onClick={() => void syncFromGitHub()} disabled={githubSyncing}>
                 <IconGit className="h-4 w-4" /> {githubSyncing ? 'Syncing…' : 'Sync from GitHub'}
@@ -481,7 +502,7 @@ export function Projects(): React.JSX.Element {
           </div>
         </Card>
       ) : mode === 'gallery' ? (
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {projects.map((p) => (
             <SiteCard key={p.id} project={p} />
           ))}
@@ -492,6 +513,7 @@ export function Projects(): React.JSX.Element {
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-subtle">
                 <th className="px-6 py-3 font-medium">Site</th>
+                <th className="px-6 py-3 font-medium">Category</th>
                 <th className="px-6 py-3 font-medium">Level</th>
                 <th className="px-6 py-3 font-medium">Status</th>
                 <th className="px-6 py-3 font-medium">Links</th>
@@ -507,6 +529,9 @@ export function Projects(): React.JSX.Element {
                   className="cursor-pointer border-b border-border last:border-0 transition hover:bg-bg"
                 >
                   <td className="px-6 py-4 font-medium text-text">{p.name}</td>
+                  <td className="px-6 py-4">
+                    <CategoryBadge category={p.category} />
+                  </td>
                   <td className="px-6 py-4">
                     <LevelPill level={p.currentLevel} />
                   </td>
