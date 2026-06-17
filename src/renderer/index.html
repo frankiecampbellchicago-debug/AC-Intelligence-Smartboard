@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' 'sha256-/gOfz+bM+QsL8T353DLpZEHTrsAAQ72R7uH5TEazB0Y='"
+    />
+    <title>Website Cookbook</title>
+    <script>
+      // Apply persisted theme before React mounts to avoid a flash of the wrong theme.
+      try {
+        const t = localStorage.getItem('wc-theme')
+        const dark =
+          t === 'dark' ||
+          ((t === 'system' || !t) && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        if (dark) document.documentElement.classList.add('dark')
+      } catch (_) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

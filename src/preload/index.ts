@@ -1,0 +1,69 @@
+import { contextBridge, ipcRenderer } from 'electron'
+import type {
+  Store,
+  GithubStatus,
+  GithubRepo,
+  TerminalCreateOpts,
+  PrepareResult
+} from '../shared/types'
+
+type ThemePref = 'light' | 'dark' | 'system'
+
+/**
+ * The entire surface the renderer is allowed to touch. Deliberately tiny —
+ * no fs, no shell, no ipcRenderer exposed directly.
+ */
+const api = {
+  store: {
+    get: (): Promise<Store> => ipcRenderer.invoke('store:get'),
+    set: (store: Store): Promise<Store> => ipcRenderer.invoke('store:set', store)
+  },
+  settings: {
+    get: (): Promise<{ theme: ThemePref }> => ipcRenderer.invoke('settings:get'),
+    setTheme: (theme: ThemePref): Promise<{ theme: ThemePref }> =>
+      ipcRenderer.invoke('settings:setTheme', theme),
+    shouldUseDark: (): Promise<boolean> => ipcRenderer.invoke('theme:shouldUseDark')
+  },
+  shell: {
+    openExternal: (url: string): Promise<void> => ipcRenderer.invoke('shell:openExternal', url),
+    openPath: (path: string): Promise<string> => ipcRenderer.invoke('shell:openPath', path),
+    showItemInFolder: (path: string): Promise<void> =>
+      ipcRenderer.invoke('shell:showItemInFolder', path)
+  },
+  github: {
+    status: (): Promise<GithubStatus> => ipcRenderer.invoke('github:status'),
+    listRepos: (): Promise<GithubRepo[]> => ipcRenderer.invoke('github:listRepos')
+  },
+  terminal: {
+    create: (opts: TerminalCreateOpts): Promise<string> => ipcRenderer.invoke('term:create', opts),
+    onData: (id: string, cb: (data: string) => void): (() => void) => {
+      const ch = `term:data:${id}`
+      const listener = (_e: unknown, data: string): void => cb(data)
+      ipcRenderer.on(ch, listener)
+      return () => ipcRenderer.removeListener(ch, listener)
+    },
+    onExit: (id: string, cb: () => void): (() => void) => {
+      const ch = `term:exit:${id}`
+      const listener = (): void => cb()
+      ipcRenderer.on(ch, listener)
+      return () => ipcRenderer.removeListener(ch, listener)
+    },
+    write: (id: string, data: string): void => ipcRenderer.send('term:input', { id, data }),
+    resize: (id: string, cols: number, rows: number): void =>
+      ipcRenderer.send('term:resize', { id, cols, rows }),
+    kill: (id: string): void => ipcRenderer.send('term:kill', { id })
+  },
+  studio: {
+    prepareRepo: (repoFullName: string): Promise<PrepareResult> =>
+      ipcRenderer.invoke('studio:prepareRepo', repoFullName)
+  }
+}
+
+export type CookbookApi = typeof api
+
+if (process.contextIsolated) {
+  contextBridge.exposeInMainWorld('api', api)
+} else {
+  // Fallback when contextIsolation is somehow off.
+  ;(globalThis as unknown as { api: CookbookApi }).api = api
+}
