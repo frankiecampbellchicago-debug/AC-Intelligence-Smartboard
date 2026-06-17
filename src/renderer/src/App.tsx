@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { useStore } from './store/useStore'
 import { useTheme } from './lib/theme'
@@ -142,6 +142,13 @@ export default function App(): React.JSX.Element {
   const checkGithub = useStore((s) => s.checkGithub)
   const fullBleed = FULL_BLEED.has(view)
 
+  // Once the Build Wizard terminal has been opened, keep it mounted (just hidden)
+  // so its shell sessions keep running when you tab to another page.
+  const [termMounted, setTermMounted] = useState(false)
+  useEffect(() => {
+    if (view === 'terminal') setTermMounted(true)
+  }, [view])
+
   useEffect(() => {
     void (async () => {
       await hydrate()
@@ -187,8 +194,13 @@ export default function App(): React.JSX.Element {
               {view === 'projects' && <Projects />}
               {view === 'resources' && <Resources />}
               {view === 'settings' && <Settings />}
-              {view === 'terminal' && <TerminalPage />}
               {view === 'studio' && <Studio />}
+              {/* Build Wizard terminal — stays mounted in the background so sessions persist. */}
+              {termMounted && (
+                <div className={cn('h-full', view === 'terminal' ? '' : 'hidden')}>
+                  <TerminalPage />
+                </div>
+              )}
             </>
           )}
         </main>
