@@ -415,6 +415,7 @@ export function Projects(): React.JSX.Element {
   const projects = useStore((s) => s.projects)
   const selectedId = useStore((s) => s.selectedProjectId)
   const openProject = useStore((s) => s.openProject)
+  const openStudio = useStore((s) => s.openStudio)
   const addProject = useStore((s) => s.addProject)
   const githubStatus = useStore((s) => s.githubStatus)
   const githubSyncing = useStore((s) => s.githubSyncing)
@@ -494,7 +495,8 @@ export function Projects(): React.JSX.Element {
                 <th className="px-6 py-3 font-medium">Level</th>
                 <th className="px-6 py-3 font-medium">Status</th>
                 <th className="px-6 py-3 font-medium">Links</th>
-                <th className="px-6 py-3 text-right font-medium">Updated</th>
+                <th className="px-6 py-3 font-medium">Updated</th>
+                <th className="px-6 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -518,7 +520,20 @@ export function Projects(): React.JSX.Element {
                       {p.localPath && <IconFolder className="h-4 w-4" />}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right text-muted">{relativeTime(p.updatedAt)}</td>
+                  <td className="px-6 py-4 text-muted">{relativeTime(p.updatedAt)}</td>
+                  <td className="px-6 py-4 text-right">
+                    {(p.repoFullName || p.localPath) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openStudio(p.id)
+                        }}
+                        className="bg-brand inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-95"
+                      >
+                        <IconCode className="h-3.5 w-3.5" /> Edit
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
