@@ -6,7 +6,6 @@ import {
   IconTerminal,
   IconWhiteboard,
   IconInbox,
-  IconProjects,
   IconResources,
   IconBook,
   IconGithub,
@@ -33,7 +32,6 @@ const NAV: Item[] = [
   { id: 'terminal', label: 'Build Wizard', Svg: IconTerminal },
   { id: 'whiteboard', label: 'Whiteboard', Svg: IconWhiteboard },
   { id: 'inbox', label: 'Inbox', Svg: IconInbox },
-  { id: 'projects', label: 'Projects', Svg: IconProjects },
   { id: 'resources', label: 'Resources', Svg: IconResources },
   { id: 'wizard', label: 'Cookbook', Svg: IconBook },
   { id: 'hub', label: 'GitHub', Svg: IconGithub },
@@ -92,7 +90,7 @@ export function Sidebar(): React.JSX.Element {
   const unreadMail = useInbox((s) => s.messages.filter((m) => m.folder === 'inbox' && !m.read).length)
 
   const badgeFor = (id: View): number | undefined =>
-    id === 'projects' ? projectCount : id === 'inbox' ? unreadMail : undefined
+    id === 'hub' ? projectCount : id === 'inbox' ? unreadMail : undefined
 
   return (
     <aside className="flex w-[104px] flex-col bg-sidebar">

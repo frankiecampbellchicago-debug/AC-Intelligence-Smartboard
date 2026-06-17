@@ -26,7 +26,7 @@ import {
 
 /* ----------------------------- Add / Edit modal ---------------------------- */
 
-function ProjectForm({
+export function ProjectForm({
   initial,
   onSave,
   onClose
@@ -203,6 +203,7 @@ function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
 
   function back(): void {
     setSelected(null)
+    setView('hub')
   }
 
   return (
@@ -211,7 +212,7 @@ function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
         onClick={back}
         className="inline-flex items-center gap-1 text-sm font-medium text-muted hover:text-text"
       >
-        <IconChevronLeft className="h-4 w-4" /> All projects
+        <IconChevronLeft className="h-4 w-4" /> Back to GitHub
       </button>
 
       <Card className="p-5">

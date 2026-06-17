@@ -60,7 +60,7 @@ function GithubCard(): React.JSX.Element {
               {syncing ? 'Syncing…' : 'Sync repositories'}
             </Button>
             {connected && (
-              <Button variant="subtle" onClick={() => setView('projects')}>
+              <Button variant="subtle" onClick={() => setView('hub')}>
                 View sites
               </Button>
             )}

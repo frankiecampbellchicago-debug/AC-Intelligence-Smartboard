@@ -6,7 +6,7 @@ import { classifyRepo } from './categorize'
  * can be reasoned about (and unit-tested) in isolation.
  *
  * Rules (per council review — all aimed at never losing user data):
- *  - Forks are skipped.
+ *  - Every repo is included (owned, collaborator, org, forks).
  *  - Match an incoming repo to an existing project by stable repoId first,
  *    then by lowercased repoFullName (survives renames; case-insensitive).
  *  - A matched MANUAL project is merged in place (its source flips to github)
@@ -45,7 +45,8 @@ export function reconcileProjects(
     if (p.repoFullName) index.set(nameKey(p.repoFullName), i)
   })
 
-  const fetched = repos.filter((r) => !r.isFork)
+  // Include every repo — owned, collaborator, org, and forks.
+  const fetched = repos
   const fetchedKeys = new Set<string>()
   const newcomers: Project[] = []
   let added = 0

@@ -173,7 +173,7 @@ export function Dashboard(): React.JSX.Element {
           <Button onClick={() => void syncFromGitHub()} disabled={githubSyncing}>
             <IconRefresh className={cn('h-4 w-4', githubSyncing && 'animate-spin')} /> Sync GitHub
           </Button>
-          <Button variant="subtle" onClick={() => setView('projects')}>
+          <Button variant="subtle" onClick={() => setView('hub')}>
             <IconPlus className="h-4 w-4" /> Add a project
           </Button>
         </div>
@@ -241,7 +241,7 @@ export function Dashboard(): React.JSX.Element {
           <div className="flex min-h-0 flex-col">
             <div className="mb-2 flex shrink-0 items-center justify-between">
               <h3 className="font-display text-lg font-semibold text-text">Projects</h3>
-              <button onClick={() => setView('projects')} className="text-xs font-semibold text-accent hover:underline">
+              <button onClick={() => setView('hub')} className="text-xs font-semibold text-accent hover:underline">
                 View all
               </button>
             </div>
@@ -390,7 +390,7 @@ export function Dashboard(): React.JSX.Element {
         <div className="widget shrink-0 rounded-[22px] p-4">
           <MiniCalendar />
           <div className="mt-3 flex items-center gap-2">
-            <Button className="flex-1" onClick={() => setView('projects')}>
+            <Button className="flex-1" onClick={() => setView('hub')}>
               <IconPlus className="h-4 w-4" /> Add project
             </Button>
             <button
@@ -434,7 +434,7 @@ export function Dashboard(): React.JSX.Element {
               </button>
             ))}
           </div>
-          <Button className="mt-4 w-full shrink-0" onClick={() => setView('projects')}>
+          <Button className="mt-4 w-full shrink-0" onClick={() => setView('hub')}>
             View all projects
           </Button>
         </div>

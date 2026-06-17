@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore } from '../store/useStore'
+import { ProjectForm } from './Projects'
 import { Button, CategorySelect } from '../components/ui'
 import {
   CATEGORY_LABELS,
@@ -181,12 +182,13 @@ function GroupLabel({ label, count }: { label: string; count: number }): React.J
 
 export function Hub(): React.JSX.Element {
   const projects = useStore((s) => s.projects)
-  const setView = useStore((s) => s.setView)
   const githubStatus = useStore((s) => s.githubStatus)
   const githubSyncing = useStore((s) => s.githubSyncing)
   const lastSync = useStore((s) => s.lastSync)
   const syncFromGitHub = useStore((s) => s.syncFromGitHub)
+  const addProject = useStore((s) => s.addProject)
   const query = useStore((s) => s.topQuery)
+  const [adding, setAdding] = useState(false)
   const connected = githubStatus?.connected
 
   const { groups, websites, orphans } = useMemo(() => {
@@ -245,11 +247,21 @@ export function Hub(): React.JSX.Element {
               {githubSyncing ? 'Syncing…' : 'Sync GitHub'}
             </Button>
           )}
-          <Button onClick={() => setView('projects')}>
+          <Button onClick={() => setAdding(true)}>
             <IconPlus className="h-4 w-4" /> Add manually
           </Button>
         </div>
       </div>
+
+      {adding && (
+        <ProjectForm
+          onClose={() => setAdding(false)}
+          onSave={(data) => {
+            addProject(data)
+            setAdding(false)
+          }}
+        />
+      )}
 
       {empty ? (
         <div className="rounded-2xl border border-border bg-surface px-6 py-16 text-center">

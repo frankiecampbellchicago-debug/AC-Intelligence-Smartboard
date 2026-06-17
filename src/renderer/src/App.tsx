@@ -74,7 +74,7 @@ function Topbar(): React.JSX.Element {
 
   function back(): void {
     if (selectedProjectId) useStore.setState({ selectedProjectId: null })
-    else if (view === 'studio') setView('projects')
+    else if (view === 'studio') setView('hub')
   }
 
   return (
@@ -151,11 +151,11 @@ export default function App(): React.JSX.Element {
       const st = useStore.getState()
       // Key bumped to v2 when category sync (all repos, not just live sites)
       // landed, so existing installs re-sync once to pull in automations/tools.
-      if (st.githubStatus?.connected && !localStorage.getItem('wc-autosynced-v5')) {
+      if (st.githubStatus?.connected && !localStorage.getItem('wc-autosynced-v6')) {
         try {
           await st.syncFromGitHub()
         } finally {
-          localStorage.setItem('wc-autosynced-v5', '1')
+          localStorage.setItem('wc-autosynced-v6', '1')
         }
       }
     })()

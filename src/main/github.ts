@@ -89,11 +89,15 @@ async function listRepoPaths(fullName: string, branch: string): Promise<string[]
   }
 }
 
-/** Fetch the authenticated user's repos with a computed live URL for each. */
+/**
+ * Fetch EVERY repo the user has access to — owned, collaborator, and org-member,
+ * including forks — each with a computed live URL and (for classification) its
+ * file tree.
+ */
 export async function listRepos(): Promise<GithubRepo[]> {
   const out = await runGh([
     'api',
-    'user/repos?per_page=100&sort=pushed&affiliation=owner',
+    'user/repos?per_page=100&sort=pushed&affiliation=owner,collaborator,organization_member',
     '--paginate'
   ])
   const repos = JSON.parse(out) as RawRepo[]
@@ -101,8 +105,8 @@ export async function listRepos(): Promise<GithubRepo[]> {
   for (const r of repos) {
     const pagesUrl = r.has_pages ? `https://${r.owner.login}.github.io/${r.name}/` : ''
     const homepage = (r.homepage ?? '').trim()
-    // Read the file tree (skip forks — they aren't the user's own work).
-    const paths = r.fork ? [] : await listRepoPaths(r.full_name, r.default_branch)
+    // Read the file tree so even forks/collaborator repos classify by real content.
+    const paths = await listRepoPaths(r.full_name, r.default_branch)
     result.push({
       name: r.name,
       fullName: r.full_name,

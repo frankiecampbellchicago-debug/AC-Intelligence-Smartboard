@@ -58,7 +58,7 @@ export function Studio(): React.JSX.Element {
 
   function back(): void {
     useStore.setState({ studioProjectId: null })
-    setView('projects')
+    setView('hub')
   }
 
   if (!project) {
