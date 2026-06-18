@@ -3,6 +3,7 @@ import { join } from 'path'
 import { readStore, writeStore, readSettings, writeSettings, type ThemePref } from './store'
 import { StoreSchema } from '../shared/types'
 import { githubStatus, listRepos, getLoginForToken } from './github'
+import { fetchLeads, extractSheetId } from './leads'
 import {
   generateImage,
   saveImage,
@@ -102,7 +103,8 @@ function registerIpc(): void {
 
   // --- Shell actions (URLs vs local paths handled correctly) ---
   ipcMain.handle('shell:openExternal', (_e, url: string) => {
-    if (/^https?:\/\//i.test(url)) return shell.openExternal(url)
+    // http(s) for links/websites; tel: dials (macOS hands off to iPhone/FaceTime); mailto: for email.
+    if (/^(https?|tel|mailto):/i.test(url)) return shell.openExternal(url)
     return Promise.resolve()
   })
   ipcMain.handle('shell:openPath', (_e, path: string) => shell.openPath(path))
@@ -170,6 +172,14 @@ function registerIpc(): void {
   ipcMain.handle('settings:setApiKey', (_e, key: string) => {
     setApiKey(key)
     return hasApiKey()
+  })
+
+  // --- Leads: live read of the combined Google Sheet (CSV export) ---
+  ipcMain.handle('leads:fetch', () => fetchLeads(readSettings().leadsSheetId))
+  ipcMain.handle('leads:getSheetId', () => readSettings().leadsSheetId)
+  ipcMain.handle('leads:setSheetId', (_e, idOrUrl: string) => {
+    const leadsSheetId = extractSheetId(idOrUrl)
+    return writeSettings({ ...readSettings(), leadsSheetId }).leadsSheetId
   })
 }
 

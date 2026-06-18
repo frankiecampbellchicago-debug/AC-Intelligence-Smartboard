@@ -4,7 +4,8 @@ import type {
   GithubStatus,
   GithubRepo,
   TerminalCreateOpts,
-  PrepareResult
+  PrepareResult,
+  LeadsResult
 } from '../shared/types'
 
 type ThemePref = 'light' | 'dark' | 'system'
@@ -25,8 +26,9 @@ const api = {
     set: (store: Store): Promise<Store> => ipcRenderer.invoke('store:set', store)
   },
   settings: {
-    get: (): Promise<{ theme: ThemePref }> => ipcRenderer.invoke('settings:get'),
-    setTheme: (theme: ThemePref): Promise<{ theme: ThemePref }> =>
+    get: (): Promise<{ theme: ThemePref; leadsSheetId: string }> =>
+      ipcRenderer.invoke('settings:get'),
+    setTheme: (theme: ThemePref): Promise<{ theme: ThemePref; leadsSheetId: string }> =>
       ipcRenderer.invoke('settings:setTheme', theme),
     shouldUseDark: (): Promise<boolean> => ipcRenderer.invoke('theme:shouldUseDark'),
     hasApiKey: (): Promise<boolean> => ipcRenderer.invoke('settings:hasApiKey'),
@@ -78,6 +80,12 @@ const api = {
   studio: {
     prepareRepo: (repoFullName: string): Promise<PrepareResult> =>
       ipcRenderer.invoke('studio:prepareRepo', repoFullName)
+  },
+  leads: {
+    fetch: (): Promise<LeadsResult> => ipcRenderer.invoke('leads:fetch'),
+    getSheetId: (): Promise<string> => ipcRenderer.invoke('leads:getSheetId'),
+    setSheetId: (idOrUrl: string): Promise<string> =>
+      ipcRenderer.invoke('leads:setSheetId', idOrUrl)
   }
 }
 

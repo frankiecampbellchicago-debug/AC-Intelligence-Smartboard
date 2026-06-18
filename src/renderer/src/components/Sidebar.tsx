@@ -6,6 +6,7 @@ import {
   IconTerminal,
   IconWhiteboard,
   IconInbox,
+  IconLeads,
   IconResources,
   IconBook,
   IconGithub,
@@ -17,6 +18,7 @@ type View =
   | 'hub'
   | 'dashboard'
   | 'inbox'
+  | 'leads'
   | 'whiteboard'
   | 'wizard'
   | 'projects'
@@ -32,6 +34,7 @@ const NAV: Item[] = [
   { id: 'terminal', label: 'Build Wizard', Svg: IconTerminal },
   { id: 'whiteboard', label: 'Whiteboard', Svg: IconWhiteboard },
   { id: 'inbox', label: 'Inbox', Svg: IconInbox },
+  { id: 'leads', label: 'Leads', Svg: IconLeads },
   { id: 'resources', label: 'Resources', Svg: IconResources },
   { id: 'wizard', label: 'Cookbook', Svg: IconBook },
   { id: 'hub', label: 'GitHub', Svg: IconGithub },

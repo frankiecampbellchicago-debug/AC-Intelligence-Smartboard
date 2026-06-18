@@ -120,6 +120,7 @@ function IconBtn({
 function WebsiteCard({ project }: { project: Project }): React.JSX.Element {
   const openProject = useStore((s) => s.openProject)
   const openStudio = useStore((s) => s.openStudio)
+  const setCategory = useStore((s) => s.setCategory)
   const canEdit = Boolean(project.repoFullName || project.localPath)
   return (
     <div className="group overflow-hidden rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:border-border-strong">
@@ -132,11 +133,21 @@ function WebsiteCard({ project }: { project: Project }): React.JSX.Element {
         />
       </div>
       <div className="p-3.5">
-        <div className="truncate text-sm font-bold tracking-tight text-text">{project.name}</div>
-        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-subtle">
-          {project.language && <span>{project.language}</span>}
-          {project.language && <span>·</span>}
-          <span>updated {relativeTime(project.updatedAt)}</span>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="truncate text-sm font-bold tracking-tight text-text">{project.name}</div>
+            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-subtle">
+              {project.language && <span>{project.language}</span>}
+              {project.language && <span>·</span>}
+              <span>updated {relativeTime(project.updatedAt)}</span>
+            </div>
+          </div>
+          {/* Reclassify a site — picking anything but Website drops it out of this grid. */}
+          <CategorySelect
+            value={project.category}
+            onChange={(c) => setCategory(project.id, c)}
+            className="shrink-0"
+          />
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           {canEdit && (

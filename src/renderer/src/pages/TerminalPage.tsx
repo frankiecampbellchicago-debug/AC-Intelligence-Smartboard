@@ -48,6 +48,8 @@ export function TerminalPage(): React.JSX.Element {
   const [wbOpen, setWbOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const previewRef = useRef<HTMLDivElement>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const wvRef = useRef<any>(null)
   const [size, setSize] = useState({ w: 0, h: 0 })
 
   const selected = sites.find((p) => p.id === previewId) ?? null
@@ -71,6 +73,30 @@ export function TerminalPage(): React.JSX.Element {
   useEffect(() => {
     void hydrateWB()
   }, [hydrateWB])
+
+  // The webview ignores CSS transforms, so fit the full desktop layout by zooming it out.
+  useEffect(() => {
+    if (device !== 'desktop' || !selected) return
+    const wv = wvRef.current
+    if (!wv) return
+    const z = size.w > 0 ? Math.min(1, size.w / 1280) : 1
+    const apply = (): void => {
+      try {
+        wv.setZoomFactor(z)
+      } catch {
+        /* webview not ready yet */
+      }
+    }
+    apply()
+    wv.addEventListener('dom-ready', apply)
+    return () => {
+      try {
+        wv.removeEventListener('dom-ready', apply)
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [device, selected, size.w, reloadKey])
 
   // Divider drag (mirrors the Studio split).
   useEffect(() => {
@@ -412,30 +438,15 @@ export function TerminalPage(): React.JSX.Element {
             />
             <div ref={previewRef} className="relative h-full min-w-0 flex-1 overflow-hidden bg-bg">
               {device === 'desktop' ? (
-                // Render the full 1280px-wide desktop layout scaled to fit — only once the
-                // pane is measured, so it never renders clipped at scale 1.
-                size.w > 0 && size.h > 0 ? (
-                  (() => {
-                    const DESKTOP_W = 1280
-                    const scale = Math.min(1, size.w / DESKTOP_W)
-                    return (
-                      <webview
-                        key={`${selected.id}:${reloadKey}:desktop`}
-                        src={selected.liveUrl}
-                        partition="studio"
-                        style={{
-                          width: `${DESKTOP_W}px`,
-                          height: `${size.h / scale}px`,
-                          border: '0',
-                          transform: `scale(${scale})`,
-                          transformOrigin: 'top left'
-                        }}
-                      />
-                    )
-                  })()
-                ) : (
-                  <div className="h-full w-full" />
-                )
+                // Fill the pane; the full desktop layout is fit via setZoomFactor (the
+                // webview ignores CSS transforms), applied in the effect below.
+                <webview
+                  key={`${selected.id}:${reloadKey}:desktop`}
+                  ref={wvRef}
+                  src={selected.liveUrl}
+                  partition="studio"
+                  style={{ width: '100%', height: '100%', border: '0' }}
+                />
               ) : (
                 <div className="flex h-full justify-center overflow-hidden bg-surface-2">
                   <webview

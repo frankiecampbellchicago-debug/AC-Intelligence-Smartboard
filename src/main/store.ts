@@ -1,7 +1,13 @@
 import { app } from 'electron'
 import { existsSync, readFileSync, writeFileSync, renameSync, copyFileSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
-import { CURRENT_SCHEMA_VERSION, EMPTY_STORE, StoreSchema, type Store } from '../shared/types'
+import {
+  CURRENT_SCHEMA_VERSION,
+  DEFAULT_LEADS_SHEET_ID,
+  EMPTY_STORE,
+  StoreSchema,
+  type Store
+} from '../shared/types'
 
 /**
  * Atomic, validated JSON persistence for the projects store.
@@ -22,8 +28,14 @@ export interface GithubAccount { login: string; token: string }
 export interface Settings {
   theme: ThemePref
   additionalGithubAccounts: GithubAccount[]
+  /** Google Sheet id the Leads tab reads from. */
+  leadsSheetId: string
 }
-const DEFAULT_SETTINGS: Settings = { theme: 'system', additionalGithubAccounts: [] }
+const DEFAULT_SETTINGS: Settings = {
+  theme: 'system',
+  additionalGithubAccounts: [],
+  leadsSheetId: DEFAULT_LEADS_SHEET_ID
+}
 
 function ensureDir(file: string): void {
   const dir = dirname(file)
@@ -104,7 +116,11 @@ export function readSettings(): Settings {
               typeof (a as GithubAccount).token === 'string'
           )
         : []
-      return { theme, additionalGithubAccounts }
+      const leadsSheetId =
+        typeof parsed.leadsSheetId === 'string' && parsed.leadsSheetId.trim()
+          ? parsed.leadsSheetId.trim()
+          : DEFAULT_LEADS_SHEET_ID
+      return { theme, additionalGithubAccounts, leadsSheetId }
     } catch {
       // fall through to defaults
     }

@@ -89,7 +89,7 @@ export function ProjectForm({
                 ))}
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className={cn('grid gap-4', category === 'website' ? 'grid-cols-2' : 'grid-cols-1')}>
               <div>
                 <label className={labelCls}>Status</label>
                 <select
@@ -104,20 +104,23 @@ export function ProjectForm({
                   ))}
                 </select>
               </div>
-              <div>
-                <label className={labelCls}>Current level</label>
-                <select
-                  className={field}
-                  value={currentLevel}
-                  onChange={(e) => setCurrentLevel(Number(e.target.value))}
-                >
-                  {LEVELS.map((l) => (
-                    <option key={l.number} value={l.number}>
-                      L{l.number} — {l.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Level only matters for websites (the 7-level cookbook). */}
+              {category === 'website' && (
+                <div>
+                  <label className={labelCls}>Current level</label>
+                  <select
+                    className={field}
+                    value={currentLevel}
+                    onChange={(e) => setCurrentLevel(Number(e.target.value))}
+                  >
+                    {LEVELS.map((l) => (
+                      <option key={l.number} value={l.number}>
+                        L{l.number} — {l.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
             <div>
               <label className={labelCls}>Live URL</label>
@@ -224,9 +227,14 @@ function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
               <CategoryBadge category={project.category} />
             </div>
             <div className="mt-1 text-sm text-muted">
-              Level {project.currentLevel} of {TOTAL_LEVELS} ·{' '}
-              {LEVELS[project.currentLevel - 1].title} · updated{' '}
-              {relativeTime(project.updatedAt)}
+              {/* Only websites follow the 7-level cookbook. */}
+              {project.category === 'website' && (
+                <>
+                  Level {project.currentLevel} of {TOTAL_LEVELS} ·{' '}
+                  {LEVELS[project.currentLevel - 1].title} ·{' '}
+                </>
+              )}
+              updated {relativeTime(project.updatedAt)}
             </div>
           </div>
           <div className="flex gap-2">
@@ -282,7 +290,8 @@ function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
         )}
       </Card>
 
-      {/* Level progress */}
+      {/* Level progress — the 7-level cookbook applies to websites only. */}
+      {project.category === 'website' && (
       <Card className="p-5">
         <div className="mb-1 flex items-center justify-between">
           <h3 className="font-semibold text-text">Level progress</h3>
@@ -350,6 +359,7 @@ function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
           })}
         </div>
       </Card>
+      )}
 
       {editing && (
         <ProjectForm
@@ -395,7 +405,7 @@ function SiteCard({ project }: { project: Project }): React.JSX.Element {
       <div className="p-4">
         <div className="flex items-center gap-2">
           <h3 className="min-w-0 flex-1 truncate font-semibold text-text">{project.name}</h3>
-          <LevelPill level={project.currentLevel} />
+          {project.category === 'website' && <LevelPill level={project.currentLevel} />}
         </div>
         <div className="mt-1 flex items-center gap-2 text-xs text-subtle">
           {project.language && <span>{project.language}</span>}
@@ -534,7 +544,11 @@ export function Projects(): React.JSX.Element {
                     <CategoryBadge category={p.category} />
                   </td>
                   <td className="px-6 py-4">
-                    <LevelPill level={p.currentLevel} />
+                    {p.category === 'website' ? (
+                      <LevelPill level={p.currentLevel} />
+                    ) : (
+                      <span className="text-subtle">—</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <StatusBadge status={p.status} />

@@ -14,6 +14,7 @@ import type { ProjectCategory } from '@shared/types'
 import { cn } from './lib/util'
 import { Hub } from './pages/Hub'
 import { Inbox } from './pages/Inbox'
+import { Leads } from './pages/Leads'
 import { Whiteboard } from './pages/Whiteboard'
 import { Dashboard } from './pages/Dashboard'
 import { Wizard } from './pages/Wizard'
@@ -225,6 +226,7 @@ export default function App(): React.JSX.Element {
             <>
               {view === 'hub' && <Hub />}
               {view === 'inbox' && <Inbox />}
+              {view === 'leads' && <Leads />}
               {view === 'whiteboard' && <Whiteboard />}
               {view === 'dashboard' && <Dashboard />}
               {view === 'wizard' && <Wizard />}

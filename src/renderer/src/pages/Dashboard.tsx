@@ -198,8 +198,8 @@ export function Dashboard(): React.JSX.Element {
               {greet}, Kaiden
             </h1>
             <p className="mt-1 max-w-xl text-sm leading-snug tracking-tight text-muted">
-              AC Intelligence — {total} {total === 1 ? 'project' : 'projects'} tracked,{' '}
-              {shipped} shipped and {building} in progress. Keep building.
+              {total} {total === 1 ? 'project' : 'projects'} tracked, {shipped} shipped and{' '}
+              {building} in progress. Keep building.
             </p>
           </div>
           <button onClick={() => setView('hub')} className="shrink-0 text-xs font-semibold text-accent hover:underline">
@@ -265,7 +265,8 @@ export function Dashboard(): React.JSX.Element {
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-bold text-text">{p.name}</div>
                       <div className="truncate text-[11px] text-muted">
-                        {CATEGORY_LABELS[p.category]} · Level {p.currentLevel}
+                        {CATEGORY_LABELS[p.category]}
+                        {p.category === 'website' && ` · Level ${p.currentLevel}`}
                       </div>
                     </div>
                     <span className="shrink-0 rounded-full bg-bg px-2.5 py-1 text-[11px] font-semibold text-muted">
@@ -287,8 +288,9 @@ export function Dashboard(): React.JSX.Element {
                   <div className="min-w-0">
                     <div className="truncate font-display text-lg font-semibold text-text">{selected.name}</div>
                     <div className="text-[11px] text-muted">
-                      {CATEGORY_LABELS[selected.category]} · Level {selected.currentLevel} of {TOTAL_LEVELS} ·{' '}
-                      {LEVELS[selected.currentLevel - 1].title}
+                      {CATEGORY_LABELS[selected.category]}
+                      {selected.category === 'website' &&
+                        ` · Level ${selected.currentLevel} of ${TOTAL_LEVELS} · ${LEVELS[selected.currentLevel - 1].title}`}
                     </div>
                   </div>
                 </div>

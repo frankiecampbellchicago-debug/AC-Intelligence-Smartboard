@@ -7,6 +7,7 @@ type View =
   | 'hub'
   | 'dashboard'
   | 'inbox'
+  | 'leads'
   | 'whiteboard'
   | 'wizard'
   | 'projects'
