@@ -348,6 +348,12 @@ export function createWebApi(): typeof window.api {
       prepareRepo: async (_repoFullName: string): Promise<PrepareResult> => ({
         error: 'Studio cloning is not available in the web version.'
       })
+    },
+
+    leads: {
+      fetch: async () => ({ leads: [], sheetId: '', error: 'Leads are not available in the web version.' }),
+      getSheetId: async () => '',
+      setSheetId: async (_id: string) => {}
     }
   }
 }

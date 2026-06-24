@@ -5,8 +5,10 @@ import { cn } from '../lib/util'
 import { useStore } from '../store/useStore'
 import { useWhiteboard } from '../store/useWhiteboard'
 import { IconGit, IconCheck, IconWizard } from '../components/icons'
-const IS_WEB = (window.api.platform as string) === 'web'
 const WEB_BACKEND_KEY = 'wc-backend-url'
+function isWeb(): boolean {
+  return (window as { api?: { platform?: string } }).api?.platform === 'web'
+}
 
 const THEMES: { id: ThemePref; label: string }[] = [
   { id: 'light', label: 'Light' },
@@ -72,11 +74,11 @@ function GithubCard(): React.JSX.Element {
             {connected ? (
               <p className="text-sm text-muted">
                 <span className="font-medium text-emerald">@{status?.login}</span>
-                <span className="ml-2 text-xs text-subtle">{IS_WEB ? 'via PAT · primary' : 'via gh CLI · primary'}</span>
+                <span className="ml-2 text-xs text-subtle">{isWeb() ? 'via PAT · primary' : 'via gh CLI · primary'}</span>
               </p>
             ) : (
               <p className="text-sm text-muted">
-                {IS_WEB
+                {isWeb()
                   ? 'No GitHub account connected. Add a Personal Access Token below.'
                   : reason === 'gh-not-found'
                     ? 'GitHub CLI not found. Install it and run `gh auth login`.'
@@ -144,7 +146,7 @@ function GithubCard(): React.JSX.Element {
               onClick={() => setAddingAccount(true)}
               className="mt-3 text-xs text-muted transition hover:text-text"
             >
-              {IS_WEB && !connected ? '+ Connect a GitHub account' : '+ Add another GitHub account'}
+              {isWeb() && !connected ? '+ Connect a GitHub account' : '+ Add another GitHub account'}
             </button>
           )}
 
@@ -297,7 +299,7 @@ export function Settings(): React.JSX.Element {
     <div className="mx-auto max-w-2xl space-y-5">
       <GithubCard />
       <ApiKeyCard />
-      {IS_WEB && <BackendUrlCard />}
+      {isWeb() && <BackendUrlCard />}
       <Card className="p-6">
         <h3 className="font-semibold text-text">Appearance</h3>
         <p className="mb-4 mt-1 text-sm text-muted">Choose how Website Cookbook looks.</p>
@@ -322,7 +324,7 @@ export function Settings(): React.JSX.Element {
         <p className="mt-1 text-sm text-muted">
           You're tracking <span className="font-semibold text-text">{count}</span>{' '}
           {count === 1 ? 'site' : 'sites'}.{' '}
-          {IS_WEB
+          {isWeb()
             ? 'Everything is stored in your browser\'s localStorage — private to this device and browser.'
             : 'Everything is stored locally on your machine with atomic, backed-up writes — nothing leaves your machine.'}
         </p>
