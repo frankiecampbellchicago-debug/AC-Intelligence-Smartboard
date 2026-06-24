@@ -74,21 +74,21 @@ function TopNav(): React.JSX.Element {
   const unreadMail = useInbox((s) => s.messages.filter((m) => m.folder === 'inbox' && !m.read).length)
 
   return (
-    <header className="drag-region grid shrink-0 grid-cols-[200px_180px_1fr_auto] gap-6 border-b border-border px-8 py-7">
+    <header className="drag-region grid shrink-0 grid-cols-[200px_180px_1fr_auto] gap-6 border-b border-border px-8 py-5">
       {/* Col 1: Brand */}
-      <div className="no-drag">
-        <button onClick={() => setView('hub')} className="text-left">
-          <div className="text-[17px] font-black leading-none tracking-tight text-text">
+      <div className="no-drag flex items-center">
+        <button onClick={() => setView('dashboard')} className="text-left">
+          <div className="text-[16px] font-black leading-none tracking-tight text-text">
             AC Intelligence
           </div>
-          <div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.22em] text-muted">
+          <div className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.22em] text-muted">
             Smartboard
           </div>
         </button>
       </div>
 
-      {/* Col 2: Nav links (vertical list, like Over-Stimulated) */}
-      <nav className="no-drag flex flex-col gap-0.5 pt-0.5">
+      {/* Col 2: Nav links */}
+      <nav className="no-drag flex flex-col justify-center gap-0.5">
         {NAV_ITEMS.map(({ id, label }) => (
           <button
             key={id}
@@ -107,24 +107,26 @@ function TopNav(): React.JSX.Element {
       </nav>
 
       {/* Col 3: About blurb */}
-      <div className="max-w-sm">
-        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-text">
-          About AC Intelligence
+      <div className="flex items-center">
+        <div className="max-w-sm">
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-text">
+            About AC Intelligence
+          </div>
+          <p className="mt-1 text-sm leading-relaxed text-muted">
+            AI-powered smartboard for building and managing web projects.
+            Connect GitHub, generate images, track leads, and ship faster.
+          </p>
         </div>
-        <p className="mt-2 text-sm leading-relaxed text-muted">
-          An AI-powered smartboard for building and managing web projects.
-          Connect GitHub, generate images, track leads, and ship faster.
-        </p>
       </div>
 
-      {/* Col 4: Search + theme toggle + window controls */}
-      <div className="no-drag flex items-start gap-4">
-        <div className="flex flex-col items-end gap-2.5">
+      {/* Col 4: Search + theme + window controls */}
+      <div className="no-drag flex items-center gap-4">
+        <div className="flex flex-col items-end gap-2">
           <button
             onClick={() => setPref(isDark ? 'light' : 'dark')}
             className="text-xs text-muted transition hover:text-text"
           >
-            {isDark ? '◑ Light mode' : '◐ Dark mode'}
+            {isDark ? '◑ Light' : '◐ Dark'}
           </button>
           <div className="relative">
             <IconSearch className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-subtle" />
@@ -132,8 +134,8 @@ function TopNav(): React.JSX.Element {
               value={topQuery}
               onChange={(e) => setTopQuery(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') setView('hub') }}
-              placeholder="Search projects…"
-              className="w-44 border-b border-border bg-transparent pb-1.5 pl-5 pr-2 text-xs text-text outline-none placeholder:text-subtle focus:border-text/40"
+              placeholder="Search…"
+              className="w-36 border-b border-border bg-transparent pb-1 pl-5 pr-2 text-xs text-text outline-none placeholder:text-subtle focus:border-text/40"
             />
           </div>
         </div>
@@ -176,7 +178,11 @@ export default function App(): React.JSX.Element {
       <main
         className={cn(
           'min-h-0 flex-1',
-          fullBleed ? 'overflow-hidden' : 'overflow-y-auto px-8 pb-10 pt-8'
+          fullBleed
+            ? 'overflow-hidden'
+            : view === 'dashboard'
+              ? 'overflow-y-auto px-8 pb-10 pt-6'
+              : 'overflow-y-auto px-8 pb-10 pt-8'
         )}
       >
         {!hydrated ? (

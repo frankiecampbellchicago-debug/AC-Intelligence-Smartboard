@@ -164,18 +164,41 @@ export function Dashboard(): React.JSX.Element {
 
   if (total === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center text-center">
-        <h2 className="font-display text-3xl font-bold tracking-[-0.01em] text-text">{greet}, Kaiden</h2>
-        <p className="mt-2 max-w-sm text-sm text-muted">
-          No projects yet. Sync GitHub to pull your repos in, or add one by hand.
-        </p>
-        <div className="mt-5 flex gap-3">
-          <Button onClick={() => void syncFromGitHub()} disabled={githubSyncing}>
-            <IconRefresh className={cn('h-4 w-4', githubSyncing && 'animate-spin')} /> Sync GitHub
-          </Button>
-          <Button variant="subtle" onClick={() => setView('hub')}>
-            <IconPlus className="h-4 w-4" /> Add a project
-          </Button>
+      <div className="flex h-full flex-col">
+        {/* Hero heading */}
+        <div className="border-b border-border pb-10 pt-4">
+          <h1 className="font-display text-[56px] font-black leading-[1.0] tracking-[-0.03em] text-text">
+            {greet},<br />Kaiden.
+          </h1>
+          <p className="mt-4 max-w-md text-base leading-relaxed text-muted">
+            Your AI-powered smartboard for building web projects — track everything,
+            ship faster, stay in control.
+          </p>
+          <div className="mt-6 flex gap-3">
+            <Button onClick={() => void syncFromGitHub()} disabled={githubSyncing}>
+              <IconRefresh className={cn('h-4 w-4', githubSyncing && 'animate-spin')} /> Sync GitHub
+            </Button>
+            <Button variant="subtle" onClick={() => setView('hub')}>
+              <IconPlus className="h-4 w-4" /> Add a project
+            </Button>
+          </div>
+        </div>
+
+        {/* Feature highlights */}
+        <div className="mt-10 grid grid-cols-3 gap-px border border-border bg-border">
+          {[
+            { title: 'Projects', desc: 'Track every site, automation, and tool across GitHub and locally.' },
+            { title: 'AI Images', desc: 'Generate visuals for any project with OpenRouter — right from your board.' },
+            { title: 'Terminal', desc: 'Build and deploy from a live terminal with full shell access.' },
+          ].map(({ title, desc }) => (
+            <div key={title} className="bg-bg p-6">
+              <div className="mb-1 flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full border border-muted" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{title}</span>
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{desc}</p>
+            </div>
+          ))}
         </div>
       </div>
     )
