@@ -2,40 +2,39 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Semantic design tokens — light theme. Sleek professional SaaS: cool neutrals + one indigo accent. */
+/* Semantic design tokens — light theme. Warm editorial: cream background, near-black text. */
 :root {
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --surface-2: #f1f3f6;
-  --sidebar: #0f1218;
-  --border: #e6e8ec;
-  --border-strong: #d4d8df;
-  --text: #161a20;
-  --text-muted: #667085;
-  --text-subtle: #98a1b0;
+  --bg: #F2EFEA;
+  --surface: #FAF8F5;
+  --surface-2: #E8E4DF;
+  --sidebar: #F2EFEA;
+  --border: #D5D0CA;
+  --border-strong: #B8B3AD;
+  --text: #1C1A17;
+  --text-muted: #72706A;
+  --text-subtle: #A09D97;
 
-  --accent: #4f46e5;
-  --accent-soft: #eef0fe;
-  --purple: #7c3aed;
-  --amber: #d97706;
-  --green: #059669;
-  --red: #dc2626;
-  --cyan: #0891b2;
-  --emerald: #059669;
+  --accent: #3B5BDB;
+  --accent-soft: #EEF2FF;
+  --purple: #6741D9;
+  --amber: #C07D00;
+  --green: #2F9E44;
+  --red: #C92A2A;
+  --cyan: #0C8599;
+  --emerald: #2F9E44;
 
-  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 4px 14px rgba(16, 24, 40, 0.07);
+  --shadow: 0 1px 2px rgba(28, 26, 23, 0.06), 0 4px 14px rgba(28, 26, 23, 0.08);
 
-  /* Ink (near-black primary buttons) — inverts in dark so contrast holds. */
-  --ink: #111827;
-  --ink-fg: #ffffff;
+  --ink: #1C1A17;
+  --ink-fg: #FAF8F5;
 
-  --indigo: #4f46e5;
-  --violet: #7c3aed;
-  --pink: #db2777;
-  --orange: #ea580c;
-  --brand-from: #4f46e5;
-  --brand-via: #6366f1;
-  --brand-to: #818cf8;
+  --indigo: #3B5BDB;
+  --violet: #6741D9;
+  --pink: #C2255C;
+  --orange: #D9480F;
+  --brand-from: #3B5BDB;
+  --brand-via: #4C6EF5;
+  --brand-to: #748FFC;
 }
 
 .dark {

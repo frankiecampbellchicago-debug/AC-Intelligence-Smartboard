@@ -120,61 +120,61 @@ function IconBtn({
 function WebsiteCard({ project }: { project: Project }): React.JSX.Element {
   const openProject = useStore((s) => s.openProject)
   const openStudio = useStore((s) => s.openStudio)
-  const setCategory = useStore((s) => s.setCategory)
   const canEdit = Boolean(project.repoFullName || project.localPath)
+
   return (
-    <div className="group overflow-hidden rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:border-border-strong">
-      <div className="relative">
-        <SitePreview url={project.liveUrl} height={150} />
-        <button
-          onClick={() => openProject(project.id)}
-          className="absolute inset-0 transition group-hover:bg-accent/5"
-          aria-label={`Open ${project.name}`}
-        />
+    <div className="group flex flex-col border-r border-border last:border-r-0">
+      {/* Editorial label: ○  PROJECT NAME */}
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border">
+        <span className="h-3 w-3 shrink-0 rounded-full border border-muted" />
+        <span className="truncate text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+          {project.name}
+        </span>
       </div>
-      <div className="p-3.5">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="truncate text-sm font-bold tracking-tight text-text">{project.name}</div>
-            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-subtle">
-              {project.language && <span>{project.language}</span>}
-              {project.language && <span>·</span>}
-              <span>updated {relativeTime(project.updatedAt)}</span>
-            </div>
-          </div>
-          {/* Reclassify a site — picking anything but Website drops it out of this grid. */}
-          <CategorySelect
-            value={project.category}
-            onChange={(c) => setCategory(project.id, c)}
-            className="shrink-0"
+
+      {/* Full-bleed preview */}
+      <div className="relative overflow-hidden bg-surface-2" style={{ aspectRatio: '4/3' }}>
+        <SitePreview url={project.liveUrl} height={320} />
+
+        {/* Hover overlay */}
+        <div className="absolute inset-0 flex flex-col justify-between p-3 opacity-0 transition-opacity group-hover:opacity-100 bg-black/10">
+          <button
+            onClick={() => openProject(project.id)}
+            className="absolute inset-0"
+            aria-label={`Open ${project.name}`}
           />
+          <div className="relative ml-auto flex items-center gap-1.5">
+            {project.liveUrl && (
+              <button
+                onClick={(e) => { e.stopPropagation(); openExternal(project.liveUrl) }}
+                className="rounded bg-bg/90 px-2.5 py-1 text-[11px] font-medium text-text backdrop-blur-sm transition hover:bg-bg"
+              >
+                Visit ↗
+              </button>
+            )}
+            {canEdit && (
+              <button
+                onClick={(e) => { e.stopPropagation(); openStudio(project.id) }}
+                className="bg-ink rounded px-2.5 py-1 text-[11px] font-medium text-[var(--ink-fg)] transition hover:opacity-90"
+              >
+                Edit
+              </button>
+            )}
+            {project.repoUrl && (
+              <button
+                onClick={(e) => { e.stopPropagation(); openExternal(project.repoUrl) }}
+                className="rounded bg-bg/90 px-2.5 py-1 text-[11px] font-medium text-text backdrop-blur-sm transition hover:bg-bg"
+              >
+                <IconGit className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {canEdit && (
-            <button
-              onClick={() => openStudio(project.id)}
-              className="bg-ink inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--ink-fg)] transition hover:opacity-90"
-            >
-              <IconCode className="h-3.5 w-3.5" /> Edit
-            </button>
-          )}
-          {project.liveUrl && (
-            <button
-              onClick={() => openExternal(project.liveUrl)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border-strong bg-surface px-3 py-1.5 text-xs font-medium text-text transition hover:border-accent hover:text-accent"
-            >
-              <IconExternal className="h-3.5 w-3.5" /> Live
-            </button>
-          )}
-          {project.repoUrl && (
-            <button
-              onClick={() => openExternal(project.repoUrl)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border-strong bg-surface px-3 py-1.5 text-xs font-medium text-text transition hover:border-accent hover:text-accent"
-            >
-              <IconGit className="h-3.5 w-3.5" /> Repo
-            </button>
-          )}
-        </div>
+      </div>
+
+      {/* Footer: language + updated */}
+      <div className="px-4 py-2.5 text-[11px] text-muted">
+        {[project.language, `updated ${relativeTime(project.updatedAt)}`].filter(Boolean).join(' · ')}
       </div>
     </div>
   )
@@ -295,11 +295,17 @@ export function Hub(): React.JSX.Element {
             </section>
           ))}
 
-          {/* Websites — preview cards at the bottom */}
+          {/* Websites — full-bleed portfolio grid */}
           {websites.length > 0 && (
-            <section>
-              <GroupLabel label="Websites" count={websites.length} />
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <section className="-mx-8">
+              <div className="mb-0 flex items-center gap-2 border-t border-border px-8 py-3">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-subtle">Websites</span>
+                <span className="text-[10px] text-subtle">— {websites.length}</span>
+              </div>
+              <div
+                className="grid border-t border-border"
+                style={{ gridTemplateColumns: `repeat(${Math.min(websites.length, 3)}, 1fr)` }}
+              >
                 {websites.map((p) => (
                   <WebsiteCard key={p.id} project={p} />
                 ))}
