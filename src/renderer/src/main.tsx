@@ -10,6 +10,13 @@ import './index.css'
 import App from './App'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
+// Inject the web API shim when running in a browser (no Electron preload)
+if (!(window as { api?: unknown }).api) {
+  const { createWebApi, migrateWebStore } = await import('./lib/webApiShim')
+  migrateWebStore()
+  ;(window as { api?: unknown }).api = createWebApi()
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>

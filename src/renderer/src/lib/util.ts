@@ -3,12 +3,13 @@ export function cn(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(' ')
 }
 
-/** Open a web URL in the system browser via the preload bridge. */
+/** Open a URL — uses shell.openExternal in Electron, window.open on web. */
 export function openExternal(url: string): void {
-  if (url) void window.api.shell.openExternal(url)
+  if (!url) return
+  void window.api.shell.openExternal(url)
 }
 
-/** Reveal a local path in Finder/Explorer. */
+/** Reveal a local path in Finder/Explorer (no-op on web). */
 export function revealPath(path: string): void {
   if (path) void window.api.shell.showItemInFolder(path)
 }

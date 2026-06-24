@@ -5,6 +5,8 @@ import { cn } from '../lib/util'
 import { useStore } from '../store/useStore'
 import { useWhiteboard } from '../store/useWhiteboard'
 import { IconGit, IconCheck, IconWizard } from '../components/icons'
+const IS_WEB = (window.api.platform as string) === 'web'
+const WEB_BACKEND_KEY = 'wc-backend-url'
 
 const THEMES: { id: ThemePref; label: string }[] = [
   { id: 'light', label: 'Light' },
@@ -65,20 +67,22 @@ function GithubCard(): React.JSX.Element {
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold text-text">GitHub</h3>
 
-          {/* Primary account (gh CLI) */}
+          {/* Primary account display */}
           <div className="mt-2">
             {connected ? (
               <p className="text-sm text-muted">
                 <span className="font-medium text-emerald">@{status?.login}</span>
-                <span className="ml-2 text-xs text-subtle">via gh CLI · primary</span>
+                <span className="ml-2 text-xs text-subtle">{IS_WEB ? 'via PAT · primary' : 'via gh CLI · primary'}</span>
               </p>
             ) : (
               <p className="text-sm text-muted">
-                {reason === 'gh-not-found'
-                  ? 'GitHub CLI not found. Install it and run `gh auth login`.'
-                  : reason === 'not-authenticated'
-                    ? 'GitHub CLI found but not logged in. Run `gh auth login` in your terminal.'
-                    : 'Checking connection…'}
+                {IS_WEB
+                  ? 'No GitHub account connected. Add a Personal Access Token below.'
+                  : reason === 'gh-not-found'
+                    ? 'GitHub CLI not found. Install it and run `gh auth login`.'
+                    : reason === 'not-authenticated'
+                      ? 'GitHub CLI found but not logged in. Run `gh auth login` in your terminal.'
+                      : 'Checking connection…'}
               </p>
             )}
           </div>
@@ -140,7 +144,7 @@ function GithubCard(): React.JSX.Element {
               onClick={() => setAddingAccount(true)}
               className="mt-3 text-xs text-muted transition hover:text-text"
             >
-              + Add another GitHub account
+              {IS_WEB && !connected ? '+ Connect a GitHub account' : '+ Add another GitHub account'}
             </button>
           )}
 
@@ -165,6 +169,59 @@ function GithubCard(): React.JSX.Element {
               <IconCheck className="h-4 w-4" /> {result}
             </div>
           )}
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+function BackendUrlCard(): React.JSX.Element {
+  const [url, setUrl] = useState(() => localStorage.getItem(WEB_BACKEND_KEY) ?? '')
+  const [saved, setSaved] = useState(false)
+
+  function save(): void {
+    const trimmed = url.trim().replace(/\/$/, '')
+    if (trimmed) localStorage.setItem(WEB_BACKEND_KEY, trimmed)
+    else localStorage.removeItem(WEB_BACKEND_KEY)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-text/5 text-text">
+          <IconWizard className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-text">Terminal Server URL</h3>
+          <p className="mt-0.5 text-sm text-muted">
+            The terminal runs via a backend server you deploy to Railway (free tier). Paste the
+            deployment URL here. See the <code className="rounded bg-bg px-1 py-0.5 text-xs">backend/</code> folder for setup instructions.
+          </p>
+          {!url && (
+            <div className="mt-2 text-sm text-amber">No server URL set — terminal sessions won't connect.</div>
+          )}
+          {url && (
+            <div className="mt-2 text-xs text-muted break-all">
+              Current: <span className="font-mono text-text">{url}</span>
+            </div>
+          )}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <input
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://your-app.up.railway.app"
+              className="w-80 rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-accent"
+            />
+            <Button onClick={save}>Save</Button>
+            {saved && (
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald">
+                <IconCheck className="h-4 w-4" /> Saved
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </Card>
@@ -240,6 +297,7 @@ export function Settings(): React.JSX.Element {
     <div className="mx-auto max-w-2xl space-y-5">
       <GithubCard />
       <ApiKeyCard />
+      {IS_WEB && <BackendUrlCard />}
       <Card className="p-6">
         <h3 className="font-semibold text-text">Appearance</h3>
         <p className="mb-4 mt-1 text-sm text-muted">Choose how Website Cookbook looks.</p>
@@ -263,8 +321,10 @@ export function Settings(): React.JSX.Element {
         <h3 className="font-semibold text-text">Your data</h3>
         <p className="mt-1 text-sm text-muted">
           You're tracking <span className="font-semibold text-text">{count}</span>{' '}
-          {count === 1 ? 'site' : 'sites'}. Everything is stored locally on your machine with
-          atomic, backed-up writes — nothing leaves your machine.
+          {count === 1 ? 'site' : 'sites'}.{' '}
+          {IS_WEB
+            ? 'Everything is stored in your browser\'s localStorage — private to this device and browser.'
+            : 'Everything is stored locally on your machine with atomic, backed-up writes — nothing leaves your machine.'}
         </p>
       </Card>
 

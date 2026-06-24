@@ -61,12 +61,20 @@ export function TerminalView({
     let disposed = false
 
     void (async () => {
-      const newId = await window.api.terminal.create({
-        cwd,
-        runClaude,
-        cols: term.cols,
-        rows: term.rows
-      })
+      let newId: string
+      try {
+        newId = await window.api.terminal.create({ cwd, runClaude, cols: term.cols, rows: term.rows })
+      } catch (err) {
+        const msg = (err as Error).message
+        if (msg === 'NO_BACKEND_URL') {
+          term.writeln('\x1b[33mTerminal server not configured.\x1b[0m')
+          term.writeln('Go to \x1b[1mSettings → Terminal Server URL\x1b[0m and paste your backend URL.')
+          term.writeln('See the README in the \x1b[1mbackend/\x1b[0m folder for deployment instructions.')
+        } else {
+          term.writeln(`\x1b[31mFailed to connect: ${msg}\x1b[0m`)
+        }
+        return
+      }
       if (disposed) {
         window.api.terminal.kill(newId)
         return
