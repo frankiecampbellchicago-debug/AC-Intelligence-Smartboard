@@ -37,14 +37,24 @@ function boardSecret(): string {
   return (localStorage.getItem(K_SECRET) || ENV.VITE_BOARD_SECRET || '') as string
 }
 
+const K_TOKEN = 'wc-auth-token'
+function authToken(): string {
+  return localStorage.getItem(K_TOKEN) || sessionStorage.getItem(K_TOKEN) || ''
+}
+
 /** Fetch against the shared backend, or return null if none is configured. */
 async function boardFetch(path: string, init?: RequestInit): Promise<Response | null> {
   const base = backendUrl()
   if (!base) return null
   const headers: Record<string, string> = {
-    ...((init?.headers as Record<string, string>) ?? {}),
-    'X-Board-Secret': boardSecret()
+    ...((init?.headers as Record<string, string>) ?? {})
   }
+  // Prefer the login-gate session token; keep the shared secret as a fallback
+  // for servers configured without user login.
+  const token = authToken()
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  const secret = boardSecret()
+  if (secret) headers['X-Board-Secret'] = secret
   if (init?.body) headers['Content-Type'] = 'application/json'
   return fetch(base + path, { ...init, headers })
 }
@@ -402,7 +412,11 @@ export function createWebApi(): typeof window.api {
       create: async (opts: TerminalCreateOpts): Promise<string> => {
         const backend = getBackendUrl()
         if (!backend) throw new Error('NO_BACKEND_URL')
-        const wsUrl = backend.replace(/^https/, 'wss').replace(/^http/, 'ws') + '/terminal'
+        const token = authToken()
+        const wsUrl =
+          backend.replace(/^https/, 'wss').replace(/^http/, 'ws') +
+          '/terminal' +
+          (token ? `?token=${encodeURIComponent(token)}` : '')
         const ws = new WebSocket(wsUrl)
 
         return new Promise<string>((resolve, reject) => {

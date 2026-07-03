@@ -35,6 +35,7 @@ const { randomUUID } = require('crypto')
 const os = require('os')
 const store = require('./store')
 const gh = require('./github')
+const auth = require('./auth')
 
 const PORT = parseInt(process.env.PORT ?? '3001', 10)
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ?? '*'
@@ -65,6 +66,42 @@ function requireSecret(req, res, next) {
   if (safeEqual(provided, BOARD_SECRET)) return next()
   return res.status(401).json({ error: 'unauthorized' })
 }
+
+// Login gate: when USERS + SESSION_SECRET are configured, require a valid session
+// token (Bearer). Otherwise fall back to the shared-secret gate (or open).
+function requireAuth(req, res, next) {
+  if (!auth.gateConfigured()) return requireSecret(req, res, next)
+  const hdr = req.get('Authorization') || ''
+  const token = hdr.startsWith('Bearer ') ? hdr.slice(7) : ''
+  const session = auth.verifyToken(token)
+  if (!session) return res.status(401).json({ error: 'unauthorized' })
+  req.user = session
+  next()
+}
+
+// ── Login ──────────────────────────────────────────────────────────────────
+
+app.get('/auth/config', (_req, res) => res.json({ loginRequired: auth.gateConfigured() }))
+
+app.post('/login', (req, res) => {
+  const username = ((req.body && req.body.username) || '').trim()
+  const password = (req.body && req.body.password) || ''
+  const remember = Boolean(req.body && req.body.remember)
+  if (!username || !password) return res.status(400).json({ error: 'Missing username or password' })
+  if (!auth.gateConfigured()) return res.status(400).json({ error: 'Login is not configured on this server' })
+  if (!auth.authenticate(username, password)) {
+    return res.status(401).json({ error: 'Invalid username or password' })
+  }
+  try {
+    const token = auth.issueToken(username, remember)
+    const ttl = remember ? auth.REMEMBER_MS : auth.SESSION_MS
+    res.json({ token, username, expiresAt: Date.now() + ttl })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.get('/me', requireAuth, (req, res) => res.json({ username: req.user ? req.user.username : null }))
 
 // Never leak the encrypted token to a client.
 function publicAccounts(s) {
@@ -112,7 +149,7 @@ async function refreshRepos() {
 
 // ── Shared state ───────────────────────────────────────────────────────────
 
-app.get('/state', requireSecret, (_req, res) => {
+app.get('/state', requireAuth, (_req, res) => {
   const s = store.load()
   res.json({
     accounts: publicAccounts(s),
@@ -123,7 +160,7 @@ app.get('/state', requireSecret, (_req, res) => {
   })
 })
 
-app.post('/state', requireSecret, (req, res) => {
+app.post('/state', requireAuth, (req, res) => {
   const s = store.load()
   if (req.body && typeof req.body.store === 'object' && req.body.store) s.store = req.body.store
   if (req.body && typeof req.body.whiteboard === 'object' && req.body.whiteboard) {
@@ -135,7 +172,7 @@ app.post('/state', requireSecret, (req, res) => {
 
 // ── GitHub (shared accounts + repos) ───────────────────────────────────────
 
-app.get('/github/status', requireSecret, (_req, res) => {
+app.get('/github/status', requireAuth, (_req, res) => {
   const accts = publicAccounts(store.load())
   if (!accts.length) return res.json({ connected: false, reason: 'not-authenticated' })
   res.json({
@@ -145,7 +182,7 @@ app.get('/github/status', requireSecret, (_req, res) => {
   })
 })
 
-app.get('/github/repos', requireSecret, async (req, res) => {
+app.get('/github/repos', requireAuth, async (req, res) => {
   if (req.query.refresh) {
     try {
       await refreshRepos()
@@ -156,7 +193,7 @@ app.get('/github/repos', requireSecret, async (req, res) => {
   res.json(store.load().repos)
 })
 
-app.post('/github/accounts', requireSecret, async (req, res) => {
+app.post('/github/accounts', requireAuth, async (req, res) => {
   const token = ((req.body && req.body.token) || '').trim()
   if (!token) return res.status(400).json({ error: 'Invalid token' })
   let login
@@ -181,7 +218,7 @@ app.post('/github/accounts', requireSecret, async (req, res) => {
   res.json({ login })
 })
 
-app.delete('/github/accounts/:login', requireSecret, (req, res) => {
+app.delete('/github/accounts/:login', requireAuth, (req, res) => {
   const s = store.load()
   s.accounts = s.accounts.filter((a) => a.login !== req.params.login)
   store.save(s)
@@ -203,6 +240,21 @@ function getShell() {
 
 wss.on('connection', (ws, req) => {
   const clientIp = req.socket.remoteAddress
+
+  // Require a valid session token (?token=) once the login gate is configured,
+  // so the shell endpoint isn't reachable by anyone who finds the URL.
+  if (auth.gateConfigured()) {
+    let token = ''
+    try {
+      token = new URL(req.url, 'http://localhost').searchParams.get('token') || ''
+    } catch { /* malformed URL */ }
+    if (!auth.verifyToken(token)) {
+      console.warn(`[ws] rejected unauthenticated connection from ${clientIp}`)
+      ws.close(1008, 'unauthorized')
+      return
+    }
+  }
+
   console.log(`[ws] client connected from ${clientIp}`)
 
   ws.on('message', (raw) => {
@@ -280,7 +332,8 @@ wss.on('connection', (ws, req) => {
 
 server.listen(PORT, () => {
   console.log(`AC Smartboard backend listening on port ${PORT}`)
-  if (!BOARD_SECRET) console.warn('[warn] BOARD_SECRET is unset — shared-board API is OPEN to anyone with the URL')
+  if (auth.gateConfigured()) console.log('[auth] login gate active (USERS + SESSION_SECRET configured)')
+  else if (!BOARD_SECRET) console.warn('[warn] No login gate and no BOARD_SECRET — shared-board API is OPEN to anyone with the URL')
   if (!store.isPersistent()) console.warn('[warn] DATA_DIR is not a persistent volume — board data will reset on redeploy')
   // Warm the repo cache on boot, then keep it fresh.
   refreshRepos().catch(() => {})

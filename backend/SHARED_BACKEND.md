@@ -38,9 +38,37 @@ In the Railway project (Root Directory = `backend`), add these variables:
 | Variable         | Value                                                        |
 | ---------------- | ------------------------------------------------------------ |
 | `ENCRYPTION_KEY` | the 64-char hex key from step 1                              |
-| `BOARD_SECRET`   | any long random string (the shared passphrase)              |
+| `SESSION_SECRET` | any long random string (signs login sessions)               |
+| `USERS`          | JSON array of users — see the Login gate section below      |
 | `ALLOWED_ORIGIN` | `https://frankiecampbellchicago-debug.github.io`            |
 | `DATA_DIR`       | `/data`                                                       |
+
+`BOARD_SECRET` is optional now — the **login gate** (below) is the recommended
+way to protect the site. If both `USERS`+`SESSION_SECRET` are set, login is
+enforced and `BOARD_SECRET` is ignored.
+
+### Login gate (site sign-in + "remember me")
+
+The site shows a sign-in screen; a session is issued on login and, when
+"Remember me" is checked, persists ~30 days for quick re-access (else it clears
+when the tab closes). Sessions are stateless HMAC tokens — nothing to store.
+
+Create a user entry for each person (run inside `backend/`):
+
+```bash
+node hash-password.js kaiden 'your-password-here'
+node hash-password.js frankie 'their-password-here'
+```
+
+Each prints `{"username":"...","passwordHash":"scrypt$..."}`. Put both in the
+`USERS` env var as one JSON array:
+
+```
+USERS = [{"username":"kaiden","passwordHash":"scrypt$..."},{"username":"frankie","passwordHash":"scrypt$..."}]
+```
+
+The login gate also protects the terminal WebSocket — the shell endpoint now
+rejects connections without a valid session token.
 
 Then add a **Volume** mounted at `/data` (Railway → service → Volumes) so the
 board survives redeploys. Redeploy the service.
