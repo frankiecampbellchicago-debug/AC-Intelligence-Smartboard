@@ -1,76 +1,48 @@
 @import 'tailwindcss';
 @source "./**/*.{tsx,ts,jsx,js}";
 
-@custom-variant dark (&:where(.dark, .dark *));
+/* ============================================================
+   AC Intelligence Smartboard — brand tokens (dark only)
+   Mirrors the ac-intelligence site: near-black canvas, hairline
+   borders, white as the interactive signal, platinum decoration,
+   functional green/rose only where meaning demands color.
+   ============================================================ */
 
-/* Semantic design tokens — light theme. Warm editorial: cream background, near-black text. */
 :root {
-  --bg: #F2EFEA;
-  --surface: #FAF8F5;
-  --surface-2: #E8E4DF;
-  --sidebar: #F2EFEA;
-  --border: #D5D0CA;
-  --border-strong: #B8B3AD;
-  --text: #1C1A17;
-  --text-muted: #72706A;
-  --text-subtle: #A09D97;
+  --bg: #08090c;
+  --surface: #0e1015;
+  --surface-2: #141821;
+  --sidebar: #050609;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #f3f4f6;
+  --text-muted: #9aa1aa;
+  --text-subtle: #5c636c;
 
-  --accent: #3B5BDB;
-  --accent-soft: #EEF2FF;
-  --purple: #6741D9;
-  --amber: #C07D00;
-  --green: #2F9E44;
-  --red: #C92A2A;
-  --cyan: #0C8599;
-  --emerald: #2F9E44;
-
-  --shadow: 0 1px 2px rgba(28, 26, 23, 0.06), 0 4px 14px rgba(28, 26, 23, 0.08);
-
-  --ink: #1C1A17;
-  --ink-fg: #FAF8F5;
-
-  --indigo: #3B5BDB;
-  --violet: #6741D9;
-  --pink: #C2255C;
-  --orange: #D9480F;
-  --brand-from: #3B5BDB;
-  --brand-via: #4C6EF5;
-  --brand-to: #748FFC;
-}
-
-.dark {
-  --bg: #0c0e12;
-  --surface: #14171c;
-  --surface-2: #1a1e24;
-  --sidebar: #08090c;
-  --border: #232830;
-  --border-strong: #2f3640;
-  --text: #f2f4f7;
-  --text-muted: #98a1b0;
-  --text-subtle: #667085;
-
-  --accent: #818cf8;
-  --accent-soft: #1e1b4b;
-  --purple: #a78bfa;
-  --amber: #f59e0b;
+  /* White is the interactive signal — matches the site's accent. */
+  --accent: #ffffff;
+  --accent-soft: rgba(255, 255, 255, 0.07);
+  --purple: #b3a5f7;
+  --amber: #fbbf24;
   --green: #34d399;
-  --red: #f87171;
-  --cyan: #22d3ee;
+  --red: #fb7185;
+  --cyan: #7dd3fc;
   --emerald: #34d399;
 
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.5);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 34px -10px rgba(0, 0, 0, 0.6);
 
-  /* Ink pill inverts to a light pill with dark text in dark mode. */
-  --ink: #f2f4f7;
-  --ink-fg: #111827;
+  /* Ink pill = the site's solid-white button. */
+  --ink: #f3f4f6;
+  --ink-fg: #07080a;
 
-  --indigo: #818cf8;
-  --violet: #a78bfa;
-  --pink: #f472b6;
-  --orange: #fb923c;
-  --brand-from: #6366f1;
-  --brand-via: #818cf8;
-  --brand-to: #a5b4fc;
+  --indigo: #93a7f5;
+  --violet: #b3a5f7;
+  --pink: #f2a1c5;
+  --orange: #f9a262;
+  /* Platinum sweep — the brand "gradient" is metallic, not rainbow. */
+  --brand-from: #ffffff;
+  --brand-via: #d9dee4;
+  --brand-to: #aab6c2;
 }
 
 /* Expose tokens to Tailwind so utilities like bg-surface / text-muted work. */
@@ -98,12 +70,12 @@
   --color-orange: var(--orange);
 }
 
-/* Ink pill (intelly-style primary buttons). */
+/* Ink pill (site's btn-solid: white pill, near-black text). */
 .bg-ink {
   background-color: var(--ink);
 }
 
-/* Brand gradient helpers */
+/* Platinum brand sweep — replaces the old indigo rainbow. */
 .bg-brand {
   background-image: linear-gradient(135deg, var(--brand-from), var(--brand-via), var(--brand-to));
 }
@@ -114,7 +86,7 @@
   color: transparent;
 }
 .ring-brand {
-  box-shadow: 0 5px 16px -5px color-mix(in srgb, var(--accent) 50%, transparent);
+  box-shadow: 0 6px 22px -8px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 html,
@@ -128,15 +100,50 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family:
-    'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    'Schibsted Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* Headings: clean, tight sans for a sleek, professional feel. */
+/* Headings — Schibsted with the site's tight tracking. */
 .font-display {
-  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  letter-spacing: -0.02em;
+  font-family: 'Schibsted Grotesk', system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.025em;
+}
+
+/* Bracketed mono eyebrow — the site's section-label signature.
+   Usage: <p class="eyebrow">Dashboard</p> renders as [ DASHBOARD ] */
+.eyebrow {
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.eyebrow::before {
+  content: '[ ';
+  color: var(--text-subtle);
+}
+.eyebrow::after {
+  content: ' ]';
+  color: var(--text-subtle);
+}
+
+/* Tabular numerals for metrics/tables — premium dashboards align digits. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
 }
 
 /* Whiteboard surface — a faint dotted grid you "write" on. */
@@ -149,20 +156,20 @@ body {
   background-size: 22px 22px;
 }
 
-/* Reflective glass widget — translucent, blurred, with a sheen and a hover light-flash + pop. */
+/* Panel — the site's hairline card. Quiet by default, lit hairline on hover. */
 .widget {
   position: relative;
-  background: color-mix(in srgb, var(--surface) 60%, transparent);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  backdrop-filter: blur(16px) saturate(1.4);
-  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--border);
   box-shadow: var(--shadow);
   transition:
-    transform 0.28s cubic-bezier(0.2, 0.7, 0.3, 1),
-    box-shadow 0.3s ease,
-    border-color 0.25s ease;
+    transform 0.24s cubic-bezier(0.22, 0.61, 0.27, 1),
+    box-shadow 0.28s ease,
+    border-color 0.22s ease;
 }
-/* Glass reflection sheen across the top-left. */
+/* Faint top sheen — barely-there glass, not a mirror. */
 .widget::before {
   content: '';
   position: absolute;
@@ -170,17 +177,22 @@ body {
   border-radius: inherit;
   pointer-events: none;
   background: linear-gradient(
-    140deg,
-    color-mix(in srgb, #fff 16%, transparent) 0%,
-    transparent 42%
+    150deg,
+    color-mix(in srgb, #fff 7%, transparent) 0%,
+    transparent 38%
   );
 }
 .widget:hover {
-  transform: translateY(-5px) scale(1.012);
-  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
   box-shadow:
-    0 22px 50px -16px rgba(2, 6, 23, 0.55),
-    0 0 30px -2px color-mix(in srgb, var(--accent) 50%, transparent);
+    0 20px 44px -18px rgba(0, 0, 0, 0.55),
+    0 0 0 1px color-mix(in srgb, var(--accent) 6%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .widget:hover {
+    transform: none;
+  }
 }
 
 /* Thin, themed scrollbars to match the polished look. */
@@ -204,4 +216,36 @@ body {
 }
 .no-drag {
   -webkit-app-region: no-drag;
+}
+
+/* Orbiting brand mark — same motion as the site's nav emblem. */
+@keyframes orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.brand-orbit {
+  animation: orbit 16s linear infinite;
+  filter: drop-shadow(0 0 5px rgba(150, 170, 255, 0.4));
+}
+
+/* Login card entrance. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise-in {
+  animation: rise-in 0.7s cubic-bezier(0.22, 0.61, 0.27, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-orbit,
+  .rise-in {
+    animation: none;
+  }
 }

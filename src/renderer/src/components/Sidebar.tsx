@@ -41,9 +41,6 @@ const NAV: Item[] = [
   { id: 'settings', label: 'Settings', Svg: IconSettings }
 ]
 
-// Uniform icon treatment — every icon the same size and color, no opacity mismatches.
-const ICON_CLASS = 'h-[22px] w-[22px] text-white/60'
-
 function NavTile({
   label,
   Svg,
@@ -61,22 +58,29 @@ function NavTile({
     <button
       onClick={onClick}
       className={cn(
-        'flex w-full flex-col items-center gap-1.5 rounded-lg px-1 py-2.5 transition',
-        active ? 'bg-white/[0.1]' : 'hover:bg-white/[0.05]'
+        'flex w-full flex-col items-center gap-1.5 rounded-[10px] px-1 py-2.5 transition duration-150',
+        active
+          ? 'bg-white/[0.08] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.13)]'
+          : 'hover:bg-white/[0.04]'
       )}
     >
       <span className="relative">
-        <Svg className={ICON_CLASS} />
+        <Svg
+          className={cn(
+            'h-[21px] w-[21px] transition-colors duration-150',
+            active ? 'text-white' : 'text-white/50'
+          )}
+        />
         {badge != null && badge > 0 && (
-          <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white ring-2 ring-[var(--sidebar)]">
+          <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-[#07080a] ring-2 ring-[var(--sidebar)]">
             {badge}
           </span>
         )}
       </span>
       <span
         className={cn(
-          'text-center text-[10px] font-medium leading-tight',
-          active ? 'text-white' : 'text-white/55'
+          'text-center text-[10px] font-medium leading-tight transition-colors duration-150',
+          active ? 'text-white' : 'text-white/45'
         )}
       >
         {label}
@@ -100,12 +104,14 @@ export function Sidebar(): React.JSX.Element {
       {/* Drag strip clears the macOS traffic lights. */}
       <div className="drag-region h-8 w-full shrink-0" />
 
-      {/* Compact wordmark */}
-      <div className="no-drag px-2 pb-2 pt-1 text-center">
-        <div className="text-[15px] font-extrabold leading-none tracking-tight text-white">
-          AC<span className="text-[var(--accent)]">.</span>
-        </div>
-        <div className="mt-0.5 text-[8px] font-semibold uppercase tracking-[0.15em] text-white/40">
+      {/* Brand — the site's orbit emblem over the compact wordmark. */}
+      <div className="no-drag flex flex-col items-center px-2 pb-3 pt-1 text-center">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="brand-orbit h-[22px] w-[22px]">
+          <circle cx="12" cy="12" r="8" stroke="rgba(255,255,255,.82)" strokeWidth="1.5" />
+          <circle cx="12" cy="4" r="2.1" fill="#fff" />
+        </svg>
+        <div className="mt-2 text-[14px] font-extrabold leading-none tracking-tight text-white">AC</div>
+        <div className="mt-1 text-[7.5px] font-semibold uppercase tracking-[0.18em] text-white/35">
           Intelligence
         </div>
       </div>
@@ -128,9 +134,9 @@ export function Sidebar(): React.JSX.Element {
       <div className="no-drag px-2 pb-3 pt-1">
         <button
           onClick={() => window.close()}
-          className="flex w-full flex-col items-center gap-1.5 rounded-lg px-1 py-2.5 text-white/55 transition hover:bg-white/[0.05] hover:text-white"
+          className="flex w-full flex-col items-center gap-1.5 rounded-[10px] px-1 py-2.5 text-white/45 transition hover:bg-white/[0.04] hover:text-white"
         >
-          <IconLogout className={ICON_CLASS} />
+          <IconLogout className="h-[21px] w-[21px]" />
           <span className="text-[10px] font-medium leading-tight">Log out</span>
         </button>
       </div>

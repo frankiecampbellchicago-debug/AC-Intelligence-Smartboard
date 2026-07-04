@@ -61,7 +61,7 @@ function Stat({
   return (
     <div className="widget rounded-2xl px-5 py-4">
       <div
-        className="text-2xl font-bold tracking-tight text-text"
+        className="font-display tnum text-2xl font-bold text-text"
         style={accent ? { color: accent } : undefined}
       >
         {value}
@@ -128,7 +128,7 @@ function LeadCard({ lead }: { lead: Lead }): React.JSX.Element {
         {tel ? (
           <button
             onClick={() => openExternal(tel)}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-emerald px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-[4px] bg-ink px-4 py-2.5 text-sm font-semibold text-[var(--ink-fg)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-14px_rgba(255,255,255,0.4)]"
             title={`Call ${lead.phone}`}
           >
             <IconPhone className="h-4 w-4" /> Call {lead.phone}

@@ -94,7 +94,7 @@ export function Inbox(): React.JSX.Element {
                   <span
                     className={cn(
                       'rounded-full px-1.5 text-[10px] font-bold',
-                      folder === f.id ? 'bg-accent text-white' : 'bg-bg text-subtle'
+                      folder === f.id ? 'bg-accent text-[var(--ink-fg)]' : 'bg-bg text-subtle'
                     )}
                   >
                     {count}
