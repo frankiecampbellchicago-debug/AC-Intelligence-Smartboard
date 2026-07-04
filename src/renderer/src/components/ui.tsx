@@ -16,9 +16,9 @@ export function Card({
   return (
     <div
       className={cn(
-        'rounded-[14px] border border-border bg-surface shadow-[var(--shadow)] transition duration-200',
+        'rounded-[16px] border border-border bg-surface/70 shadow-[var(--shadow)] backdrop-blur-xl transition duration-200',
         interactive &&
-          'hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[0_22px_44px_-18px_rgba(0,0,0,0.6)]',
+          'hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[0_24px_54px_-20px_rgba(0,0,0,0.7),0_0_30px_-10px_rgba(124,92,255,0.3)]',
         className
       )}
     >
@@ -143,13 +143,12 @@ export function Button({
   disabled?: boolean
 }): React.JSX.Element {
   const styles = {
-    /* Site's btn-solid: white pill, dark text, lift + white bloom on hover. */
-    primary:
-      'bg-ink text-[var(--ink-fg)] hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-14px_rgba(255,255,255,0.4)]',
+    /* Aurora gradient — the loud, unmissable primary. */
+    primary: 'btn-aurora',
     ghost: 'text-muted hover:text-text hover:bg-accent-soft',
-    /* Site's btn-ghost: hairline that lights up. */
+    /* Hairline that lights up violet. */
     subtle:
-      'bg-transparent text-text border border-border-strong hover:border-text/60 hover:bg-accent-soft',
+      'bg-white/[0.03] text-text border border-border-strong backdrop-blur-md hover:border-accent/60 hover:bg-accent-soft',
     danger: 'text-red hover:bg-red/10'
   }[variant]
   return (
@@ -158,7 +157,7 @@ export function Button({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-[4px] px-4 py-1.5 text-[13px] font-semibold transition duration-200 will-change-transform disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none',
+        'inline-flex items-center justify-center gap-2 rounded-[9px] px-4 py-1.5 text-[13px] font-semibold transition duration-200 will-change-transform disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none',
         styles,
         className
       )}

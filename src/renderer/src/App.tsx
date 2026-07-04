@@ -20,6 +20,7 @@ import { Resources } from './pages/Resources'
 import { Settings } from './pages/Settings'
 import { TerminalPage } from './pages/TerminalPage'
 import { Studio } from './pages/Studio'
+import ambient from './assets/app-ambient.jpg'
 
 const FULL_BLEED = new Set(['terminal', 'studio'])
 
@@ -36,7 +37,7 @@ function CircleBtn({
     <button
       onClick={onClick}
       title={title}
-      className="no-drag flex h-9 w-9 items-center justify-center rounded-full border border-border-strong bg-surface text-muted transition hover:text-text"
+      className="no-drag flex h-9 w-9 items-center justify-center rounded-full border border-border bg-white/[0.04] text-muted backdrop-blur-md transition hover:border-border-strong hover:text-text"
     >
       {children}
     </button>
@@ -102,12 +103,12 @@ function Topbar(): React.JSX.Element {
   }
 
   return (
-    <header className="drag-region flex items-center justify-between gap-4 px-6 pb-3 pt-5">
+    <header className="drag-region flex items-center justify-between gap-4 border-b border-border bg-bg/40 px-6 py-3 backdrop-blur-xl">
       <div className="no-drag flex min-w-0 flex-1 items-center gap-3">
         {canBack && (
           <button
             onClick={back}
-            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border-strong bg-surface px-3 py-1.5 text-xs font-medium text-muted transition hover:text-text"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-muted transition hover:border-border-strong hover:text-text"
           >
             <IconChevronLeft className="h-4 w-4" /> Back
           </button>
@@ -121,11 +122,10 @@ function Topbar(): React.JSX.Element {
               if (e.key === 'Enter') setView('hub')
             }}
             placeholder="Search projects…"
-            className="w-full rounded-full border border-border-strong bg-surface py-2 pl-9 pr-3 text-sm text-text outline-none focus:border-accent"
+            className="w-full rounded-[10px] border border-border bg-white/[0.04] py-2 pl-9 pr-3 text-sm text-text outline-none backdrop-blur-md transition placeholder:text-subtle focus:border-accent focus:bg-white/[0.06]"
           />
         </div>
         <div className="hidden items-center gap-1.5 xl:flex">
-          <span className="text-xs text-subtle">In:</span>
           {CHIPS.map((c) => (
             <button
               key={c.cat}
@@ -133,7 +133,7 @@ function Topbar(): React.JSX.Element {
                 setHubTab(c.cat)
                 setView('hub')
               }}
-              className="rounded-full border border-border-strong bg-surface px-3 py-1 text-xs font-medium text-muted transition hover:border-text/40 hover:text-text"
+              className="rounded-full border border-border bg-white/[0.03] px-3 py-1 text-xs font-medium text-muted transition hover:border-accent/50 hover:text-text"
             >
               {c.label}
             </button>
@@ -148,9 +148,6 @@ function Topbar(): React.JSX.Element {
         <CircleBtn onClick={() => setView('settings')} title="Settings">
           <IconSettings className="h-[18px] w-[18px]" />
         </CircleBtn>
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-sm font-bold text-[var(--ink-fg)]">
-          K
-        </div>
       </div>
       <WindowControls />
     </header>
@@ -185,14 +182,26 @@ export default function App(): React.JSX.Element {
   }, [hydrate, checkGithub])
 
   return (
-    <div className="flex h-full overflow-hidden bg-sidebar text-text">
+    <div className="relative flex h-full overflow-hidden text-text">
+      {/* The aurora world — everything floats above it. */}
+      <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
+        <img src={ambient} alt="" className="h-full w-full object-cover" draggable={false} />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(7,7,13,.45) 0%, rgba(7,7,13,.62) 55%, rgba(7,7,13,.88) 100%)'
+          }}
+        />
+      </div>
+
       <Sidebar />
-      <div className="my-3 mr-3 ml-1 flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-bg shadow-[0_14px_48px_rgba(0,0,0,0.5)]">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar />
         <main
           className={cn(
             'min-h-0 flex-1',
-            fullBleed ? 'overflow-hidden' : 'overflow-y-auto px-6 pb-6'
+            fullBleed ? 'overflow-hidden' : 'overflow-y-auto px-7 pb-7 pt-6'
           )}
         >
           {!hydrated ? (

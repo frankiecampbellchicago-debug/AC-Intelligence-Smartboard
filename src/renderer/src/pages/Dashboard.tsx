@@ -20,6 +20,35 @@ import {
   IconRefresh,
   IconCheck
 } from '../components/icons'
+import dashHero from '../assets/dash-hero.jpg'
+
+/** One KPI tile in the hero stat row. */
+function StatTile({
+  label,
+  value,
+  tint,
+  sub
+}: {
+  label: string
+  value: string | number
+  tint?: string
+  sub?: string
+}): React.JSX.Element {
+  return (
+    <div className="widget flex-1 rounded-[16px] px-5 py-4">
+      <div className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-subtle">{label}</div>
+      <div className="mt-1 flex items-baseline gap-2">
+        <span
+          className="font-display tnum text-[30px] font-bold leading-none text-text"
+          style={tint ? { color: tint } : undefined}
+        >
+          {value}
+        </span>
+        {sub && <span className="text-[11px] font-medium text-muted">{sub}</span>}
+      </div>
+    </div>
+  )
+}
 
 /* --------------------------------- pieces --------------------------------- */
 
@@ -38,10 +67,14 @@ function BarRow({
       <span className="w-24 shrink-0 truncate text-[12px] font-medium tracking-tight text-muted">
         {label}
       </span>
-      <div className="h-2 flex-1 overflow-hidden rounded-full bg-bg">
+      <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
         <div
           className="h-full rounded-full"
-          style={{ width: `${Math.max(3, (value / max) * 100)}%`, background: 'var(--accent)' }}
+          style={{
+            width: `${Math.max(3, (value / max) * 100)}%`,
+            background: 'linear-gradient(90deg, var(--brand-from), var(--brand-to))',
+            boxShadow: '0 0 12px -2px rgba(140,100,255,.6)'
+          }}
         />
       </div>
       <span className="w-5 shrink-0 text-right text-sm font-bold tabular-nums text-text">{value}</span>
@@ -161,51 +194,96 @@ export function Dashboard(): React.JSX.Element {
   const hour = new Date().getHours()
   const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
 
-  if (total === 0) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center text-center">
-        <h2 className="font-display text-3xl font-bold tracking-[-0.01em] text-text">{greet}, Kaiden</h2>
-        <p className="mt-2 max-w-sm text-sm text-muted">
-          No projects yet. Sync GitHub to pull your repos in, or add one by hand.
+  /* The aurora hero band — renders in both empty and populated states. */
+  const heroBand = (
+    <div className="relative shrink-0 overflow-hidden rounded-[20px] border border-border shadow-[0_30px_70px_-24px_rgba(0,0,0,0.8)]">
+      <img
+        src={dashHero}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full object-cover object-[50%_38%]"
+        draggable={false}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(100deg, rgba(7,7,13,.78) 0%, rgba(7,7,13,.45) 46%, rgba(7,7,13,.15) 100%), linear-gradient(0deg, rgba(7,7,13,.72) 0%, transparent 42%)'
+        }}
+      />
+      <div className="relative px-7 pb-7 pt-9">
+        <p className="eyebrow">Ops Hub</p>
+        <h1 className="font-display mt-2 text-[38px] font-extrabold leading-[1.05] text-white">
+          {greet}, <span className="text-brand">Kaiden</span>
+        </h1>
+        <p className="mt-2 max-w-xl text-sm leading-snug text-white/75">
+          {total === 0 ? (
+            <>Your command center is live. Pull your repos in and light the board up.</>
+          ) : (
+            <>
+              <span className="tnum">{total}</span> {total === 1 ? 'project' : 'projects'} tracked,{' '}
+              <span className="tnum">{shipped}</span> shipped and <span className="tnum">{building}</span>{' '}
+              in progress. Keep building.
+            </>
+          )}
         </p>
-        <div className="mt-5 flex gap-3">
+        <div className="mt-5 flex flex-wrap items-center gap-2.5">
           <Button onClick={() => void syncFromGitHub()} disabled={githubSyncing}>
-            <IconRefresh className={cn('h-4 w-4', githubSyncing && 'animate-spin')} /> Sync GitHub
+            <IconRefresh className={cn('h-4 w-4', githubSyncing && 'animate-spin')} />
+            {githubSyncing ? 'Syncing…' : 'Sync GitHub'}
           </Button>
           <Button variant="subtle" onClick={() => setView('hub')}>
             <IconPlus className="h-4 w-4" /> Add a project
           </Button>
         </div>
       </div>
+    </div>
+  )
+
+  if (total === 0) {
+    return (
+      <div className="rise-in mx-auto flex max-w-5xl flex-col gap-5">
+        {heroBand}
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="widget rounded-[16px] p-5">
+            <div className="text-[22px]">⚡</div>
+            <div className="mt-2 text-sm font-bold text-text">Sync GitHub</div>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              One click imports every repo you own or collaborate on, auto-sorted by what it is.
+            </p>
+          </div>
+          <div className="widget rounded-[16px] p-5">
+            <div className="text-[22px]">🛰️</div>
+            <div className="mt-2 text-sm font-bold text-text">Shared board</div>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              You and Frankie see the same always-current view, refreshed every five minutes.
+            </p>
+          </div>
+          <div className="widget rounded-[16px] p-5">
+            <div className="text-[22px]">🌌</div>
+            <div className="mt-2 text-sm font-bold text-text">Build from here</div>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Wizard, whiteboard, leads and inbox — the whole operation runs from this screen.
+            </p>
+          </div>
+        </div>
+      </div>
     )
   }
 
   return (
-    <div className="relative flex items-stretch gap-5">
-      {/* Ambient color wash so the glass widgets have something to refract. */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-24 -top-10 h-72 w-72 rounded-full bg-[var(--accent)] opacity-[0.05] blur-3xl" />
-        <div className="absolute right-0 top-44 h-80 w-80 rounded-full bg-[var(--violet)] opacity-[0.07] blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-[var(--cyan)] opacity-[0.05] blur-3xl" />
-      </div>
+    <div className="rise-in relative flex items-stretch gap-5">
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col gap-5">
-        {/* Greeting */}
-        <div className="flex shrink-0 items-start justify-between gap-4">
-          <div>
-            <p className="eyebrow mb-2">Ops Hub</p>
-            <h1 className="font-display text-[32px] font-bold leading-[1.08] text-text">
-              {greet}, Kaiden
-            </h1>
-            <p className="mt-1 max-w-xl text-sm leading-snug tracking-tight text-muted">
-              <span className="tnum">{total}</span> {total === 1 ? 'project' : 'projects'} tracked,{' '}
-              <span className="tnum">{shipped}</span> shipped and <span className="tnum">{building}</span>{' '}
-              in progress. Keep building.
-            </p>
-          </div>
-          <button onClick={() => setView('hub')} className="shrink-0 text-xs font-semibold text-accent hover:underline">
-            Show all
-          </button>
+        {heroBand}
+
+        {/* KPI row */}
+        <div className="flex shrink-0 gap-4">
+          <StatTile label="Projects" value={total} />
+          <StatTile label="Shipped" value={shipped} tint="var(--green)" />
+          <StatTile label="In progress" value={building} tint="var(--amber)" />
+          <StatTile label="Avg level" value={avgLevel} sub={`of ${TOTAL_LEVELS}`} />
         </div>
 
         {/* Overview — one clean panel of labeled bars */}

@@ -2,47 +2,50 @@
 @source "./**/*.{tsx,ts,jsx,js}";
 
 /* ============================================================
-   AC Intelligence Smartboard — brand tokens (dark only)
-   Mirrors the ac-intelligence site: near-black canvas, hairline
-   borders, white as the interactive signal, platinum decoration,
-   functional green/rose only where meaning demands color.
+   AC Intelligence Smartboard — AURORA system (dark only)
+   Mission control at dusk: glass panels floating over a living
+   aurora sky. Electric violet is the voice, cyan the echo,
+   moonlight the ink. Color is loud where it guides, silent
+   where data needs to breathe.
    ============================================================ */
 
 :root {
-  --bg: #08090c;
-  --surface: #0e1015;
-  --surface-2: #141821;
-  --sidebar: #050609;
-  --border: rgba(255, 255, 255, 0.09);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --text: #f3f4f6;
-  --text-muted: #9aa1aa;
-  --text-subtle: #5c636c;
+  --bg: #07070d;
+  --surface: #0d0e18;
+  --surface-2: #151729;
+  --sidebar: #090a12;
+  --border: rgba(148, 156, 255, 0.13);
+  --border-strong: rgba(158, 166, 255, 0.26);
+  --text: #eef0ff;
+  --text-muted: #9aa3c7;
+  --text-subtle: #5d6386;
 
-  /* White is the interactive signal — matches the site's accent. */
-  --accent: #ffffff;
-  --accent-soft: rgba(255, 255, 255, 0.07);
+  /* Electric violet — the interactive voice. */
+  --accent: #8f7bff;
+  --accent-soft: rgba(143, 123, 255, 0.14);
+  --accent-2: #67e8f9; /* aurora cyan echo */
   --purple: #b3a5f7;
-  --amber: #fbbf24;
-  --green: #34d399;
-  --red: #fb7185;
-  --cyan: #7dd3fc;
-  --emerald: #34d399;
+  --amber: #ffc466;
+  --green: #3ee6a8;
+  --red: #ff6b8b;
+  --cyan: #67e8f9;
+  --emerald: #3ee6a8;
 
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 34px -10px rgba(0, 0, 0, 0.6);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 40px -12px rgba(0, 0, 0, 0.65);
+  --glow: 0 10px 40px -10px rgba(124, 92, 255, 0.55);
 
-  /* Ink pill = the site's solid-white button. */
-  --ink: #f3f4f6;
-  --ink-fg: #07080a;
+  /* Ink pill: moonlight-white (avatar, quiet chips). */
+  --ink: #eef0ff;
+  --ink-fg: #0a0a14;
 
   --indigo: #93a7f5;
   --violet: #b3a5f7;
-  --pink: #f2a1c5;
-  --orange: #f9a262;
-  /* Platinum sweep — the brand "gradient" is metallic, not rainbow. */
-  --brand-from: #ffffff;
-  --brand-via: #d9dee4;
-  --brand-to: #aab6c2;
+  --pink: #f49ac8;
+  --orange: #ffa06b;
+  /* The brand gradient — violet to magenta, aurora-charged. */
+  --brand-from: #7c5cff;
+  --brand-via: #a45df5;
+  --brand-to: #d357e0;
 }
 
 /* Expose tokens to Tailwind so utilities like bg-surface / text-muted work. */
@@ -57,6 +60,7 @@
   --color-muted: var(--text-muted);
   --color-subtle: var(--text-subtle);
   --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
   --color-accent-soft: var(--accent-soft);
   --color-purple: var(--purple);
   --color-amber: var(--amber);
@@ -70,23 +74,23 @@
   --color-orange: var(--orange);
 }
 
-/* Ink pill (site's btn-solid: white pill, near-black text). */
+/* Ink pill (moonlight chip: pale bg, near-black text). */
 .bg-ink {
   background-color: var(--ink);
 }
 
-/* Platinum brand sweep — replaces the old indigo rainbow. */
+/* Brand gradient — the CTA voice. */
 .bg-brand {
   background-image: linear-gradient(135deg, var(--brand-from), var(--brand-via), var(--brand-to));
 }
 .text-brand {
-  background-image: linear-gradient(120deg, var(--brand-from), var(--brand-via), var(--brand-to));
+  background-image: linear-gradient(100deg, #a99bff 0%, #d57ae8 55%, #7fe3f0 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 .ring-brand {
-  box-shadow: 0 6px 22px -8px color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: var(--glow);
 }
 
 html,
@@ -107,20 +111,19 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Headings — Schibsted with the site's tight tracking. */
+/* Headings — Schibsted with tight tracking. */
 .font-display {
   font-family: 'Schibsted Grotesk', system-ui, -apple-system, sans-serif;
   letter-spacing: -0.025em;
 }
 
-/* Bracketed mono eyebrow — the site's section-label signature.
-   Usage: <p class="eyebrow">Dashboard</p> renders as [ DASHBOARD ] */
+/* Bracketed eyebrow — the brand's section-label signature. */
 .eyebrow {
   font-size: 0.66rem;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--accent);
 }
 .eyebrow::before {
   content: '[ ';
@@ -131,14 +134,14 @@ body {
   color: var(--text-subtle);
 }
 
-/* Tabular numerals for metrics/tables — premium dashboards align digits. */
+/* Tabular numerals for metrics/tables — digits must align. */
 .tnum {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  background: rgba(143, 123, 255, 0.35);
 }
 :focus-visible {
   outline: 2px solid var(--accent);
@@ -156,12 +159,13 @@ body {
   background-size: 22px 22px;
 }
 
-/* Panel — the site's hairline card. Quiet by default, lit hairline on hover. */
+/* ---------- glass panels over the aurora ---------- */
+
 .widget {
   position: relative;
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  backdrop-filter: blur(14px) saturate(1.2);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  backdrop-filter: blur(18px) saturate(1.35);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   transition:
@@ -169,7 +173,6 @@ body {
     box-shadow 0.28s ease,
     border-color 0.22s ease;
 }
-/* Faint top sheen — barely-there glass, not a mirror. */
 .widget::before {
   content: '';
   position: absolute;
@@ -178,16 +181,16 @@ body {
   pointer-events: none;
   background: linear-gradient(
     150deg,
-    color-mix(in srgb, #fff 7%, transparent) 0%,
-    transparent 38%
+    rgba(255, 255, 255, 0.07) 0%,
+    transparent 40%
   );
 }
 .widget:hover {
   transform: translateY(-3px);
   border-color: var(--border-strong);
   box-shadow:
-    0 20px 44px -18px rgba(0, 0, 0, 0.55),
-    0 0 0 1px color-mix(in srgb, var(--accent) 6%, transparent);
+    0 24px 54px -20px rgba(0, 0, 0, 0.7),
+    0 0 34px -8px rgba(124, 92, 255, 0.35);
 }
 @media (prefers-reduced-motion: reduce) {
   .widget:hover {
@@ -195,7 +198,28 @@ body {
   }
 }
 
-/* Thin, themed scrollbars to match the polished look. */
+/* Primary CTA — gradient, lift, aurora bloom. */
+.btn-aurora {
+  background-image: linear-gradient(135deg, var(--brand-from), var(--brand-via), var(--brand-to));
+  color: #fff;
+  box-shadow: 0 8px 26px -10px rgba(124, 92, 255, 0.65);
+  transition:
+    transform 0.2s cubic-bezier(0.22, 0.61, 0.27, 1),
+    box-shadow 0.24s ease,
+    filter 0.2s ease;
+}
+.btn-aurora:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+  box-shadow: 0 16px 40px -12px rgba(140, 100, 255, 0.75);
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-aurora:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* Thin, themed scrollbars. */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -218,7 +242,7 @@ body {
   -webkit-app-region: no-drag;
 }
 
-/* Orbiting brand mark — same motion as the site's nav emblem. */
+/* Orbiting brand mark. */
 @keyframes orbit {
   to {
     transform: rotate(360deg);
@@ -226,10 +250,10 @@ body {
 }
 .brand-orbit {
   animation: orbit 16s linear infinite;
-  filter: drop-shadow(0 0 5px rgba(150, 170, 255, 0.4));
+  filter: drop-shadow(0 0 6px rgba(143, 123, 255, 0.6));
 }
 
-/* Login card entrance. */
+/* Entrance. */
 @keyframes rise-in {
   from {
     opacity: 0;

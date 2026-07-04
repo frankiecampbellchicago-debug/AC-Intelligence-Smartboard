@@ -27,21 +27,36 @@ type View =
   | 'settings'
 
 type Item = { id: View; label: string; Svg: (p: { className?: string }) => React.JSX.Element }
+type Group = { title: string; items: Item[] }
 
-// One flat list — no group separation. Build Wizard → terminal; Cookbook → the 7-level guide.
-const NAV: Item[] = [
-  { id: 'dashboard', label: 'Dashboard', Svg: IconDashboard },
-  { id: 'terminal', label: 'Build Wizard', Svg: IconTerminal },
-  { id: 'whiteboard', label: 'Whiteboard', Svg: IconWhiteboard },
-  { id: 'inbox', label: 'Inbox', Svg: IconInbox },
-  { id: 'leads', label: 'Leads', Svg: IconLeads },
-  { id: 'resources', label: 'Resources', Svg: IconResources },
-  { id: 'wizard', label: 'Cookbook', Svg: IconBook },
-  { id: 'hub', label: 'GitHub', Svg: IconGithub },
-  { id: 'settings', label: 'Settings', Svg: IconSettings }
+/* Grouped navigation — same views as before, organized by intent. */
+const GROUPS: Group[] = [
+  {
+    title: 'Workspace',
+    items: [
+      { id: 'dashboard', label: 'Dashboard', Svg: IconDashboard },
+      { id: 'terminal', label: 'Build Wizard', Svg: IconTerminal },
+      { id: 'whiteboard', label: 'Whiteboard', Svg: IconWhiteboard }
+    ]
+  },
+  {
+    title: 'Operate',
+    items: [
+      { id: 'inbox', label: 'Inbox', Svg: IconInbox },
+      { id: 'leads', label: 'Leads', Svg: IconLeads },
+      { id: 'hub', label: 'GitHub', Svg: IconGithub }
+    ]
+  },
+  {
+    title: 'Library',
+    items: [
+      { id: 'wizard', label: 'Cookbook', Svg: IconBook },
+      { id: 'resources', label: 'Resources', Svg: IconResources }
+    ]
+  }
 ]
 
-function NavTile({
+function NavRow({
   label,
   Svg,
   active,
@@ -58,33 +73,29 @@ function NavTile({
     <button
       onClick={onClick}
       className={cn(
-        'flex w-full flex-col items-center gap-1.5 rounded-[10px] px-1 py-2.5 transition duration-150',
+        'group relative flex w-full items-center gap-3 rounded-[10px] px-3 py-2 text-left text-[13.5px] font-medium transition duration-150',
         active
-          ? 'bg-white/[0.08] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.13)]'
-          : 'hover:bg-white/[0.04]'
+          ? 'bg-brand text-white shadow-[0_8px_24px_-10px_rgba(124,92,255,0.7)]'
+          : 'text-muted hover:bg-white/[0.05] hover:text-text'
       )}
     >
-      <span className="relative">
-        <Svg
-          className={cn(
-            'h-[21px] w-[21px] transition-colors duration-150',
-            active ? 'text-white' : 'text-white/50'
-          )}
-        />
-        {badge != null && badge > 0 && (
-          <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-[#07080a] ring-2 ring-[var(--sidebar)]">
-            {badge}
-          </span>
-        )}
-      </span>
-      <span
+      <Svg
         className={cn(
-          'text-center text-[10px] font-medium leading-tight transition-colors duration-150',
-          active ? 'text-white' : 'text-white/45'
+          'h-[18px] w-[18px] shrink-0 transition-colors duration-150',
+          active ? 'text-white' : 'text-subtle group-hover:text-text'
         )}
-      >
-        {label}
-      </span>
+      />
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {badge != null && badge > 0 && (
+        <span
+          className={cn(
+            'tnum flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold',
+            active ? 'bg-white/25 text-white' : 'bg-accent-soft text-accent'
+          )}
+        >
+          {badge}
+        </span>
+      )}
     </button>
   )
 }
@@ -100,45 +111,73 @@ export function Sidebar(): React.JSX.Element {
     id === 'hub' ? projectCount : id === 'inbox' ? unreadMail : undefined
 
   return (
-    <aside className="flex w-[104px] flex-col bg-sidebar">
+    <aside className="flex w-[228px] shrink-0 flex-col border-r border-border bg-sidebar/70 backdrop-blur-2xl">
       {/* Drag strip clears the macOS traffic lights. */}
-      <div className="drag-region h-8 w-full shrink-0" />
+      <div className="drag-region h-9 w-full shrink-0" />
 
-      {/* Brand — the site's orbit emblem over the compact wordmark. */}
-      <div className="no-drag flex flex-col items-center px-2 pb-3 pt-1 text-center">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="brand-orbit h-[22px] w-[22px]">
-          <circle cx="12" cy="12" r="8" stroke="rgba(255,255,255,.82)" strokeWidth="1.5" />
-          <circle cx="12" cy="4" r="2.1" fill="#fff" />
+      {/* Brand */}
+      <div className="no-drag flex items-center gap-2.5 px-4 pb-4 pt-1">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="brand-orbit h-[22px] w-[22px] shrink-0">
+          <circle cx="12" cy="12" r="8" stroke="rgba(238,240,255,.85)" strokeWidth="1.5" />
+          <circle cx="12" cy="4" r="2.1" fill="#a99bff" />
         </svg>
-        <div className="mt-2 text-[14px] font-extrabold leading-none tracking-tight text-white">AC</div>
-        <div className="mt-1 text-[7.5px] font-semibold uppercase tracking-[0.18em] text-white/35">
-          Intelligence
+        <div className="min-w-0 leading-tight">
+          <div className="truncate text-[14px] font-extrabold tracking-tight text-text">
+            AC Intelligence
+          </div>
+          <div className="text-[9px] font-semibold uppercase tracking-[0.22em] text-subtle">
+            Smartboard
+          </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="no-drag flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-1">
-        {NAV.map((it) => (
-          <NavTile
-            key={it.id}
-            label={it.label}
-            Svg={it.Svg}
-            active={view === it.id}
-            badge={badgeFor(it.id)}
-            onClick={() => setView(it.id)}
-          />
+      <nav className="no-drag flex-1 space-y-5 overflow-y-auto px-3 py-1">
+        {GROUPS.map((g) => (
+          <div key={g.title}>
+            <div className="mb-1.5 px-3 text-[9.5px] font-bold uppercase tracking-[0.2em] text-subtle">
+              {g.title}
+            </div>
+            <div className="space-y-0.5">
+              {g.items.map((it) => (
+                <NavRow
+                  key={it.id}
+                  label={it.label}
+                  Svg={it.Svg}
+                  active={view === it.id}
+                  badge={badgeFor(it.id)}
+                  onClick={() => setView(it.id)}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
-      {/* Log out (closes the window) */}
-      <div className="no-drag px-2 pb-3 pt-1">
-        <button
-          onClick={() => window.close()}
-          className="flex w-full flex-col items-center gap-1.5 rounded-[10px] px-1 py-2.5 text-white/45 transition hover:bg-white/[0.04] hover:text-white"
-        >
-          <IconLogout className="h-[21px] w-[21px]" />
-          <span className="text-[10px] font-medium leading-tight">Log out</span>
-        </button>
+      {/* Settings + user card */}
+      <div className="no-drag space-y-1 px-3 pb-4 pt-2">
+        <NavRow
+          label="Settings"
+          Svg={IconSettings}
+          active={view === 'settings'}
+          onClick={() => setView('settings')}
+        />
+        <div className="mt-2 flex items-center gap-2.5 rounded-[12px] border border-border bg-white/[0.03] px-3 py-2.5">
+          <span className="bg-brand flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white">
+            K
+          </span>
+          <div className="min-w-0 flex-1 leading-tight">
+            <div className="truncate text-[12.5px] font-semibold text-text">Kaiden</div>
+            <div className="truncate text-[10px] text-subtle">Operator</div>
+          </div>
+          <button
+            onClick={() => window.close()}
+            title="Log out"
+            className="text-subtle transition hover:text-text"
+          >
+            <IconLogout className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </aside>
   )

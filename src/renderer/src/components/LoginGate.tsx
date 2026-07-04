@@ -185,10 +185,9 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }): React.JSX.Element 
             <button
               type="submit"
               disabled={busy || !username.trim() || !password}
-              className="mt-1 w-full rounded-[4px] bg-white py-3 text-[15px] font-semibold text-[#07080a] transition
-                         duration-200 will-change-transform hover:-translate-y-0.5
-                         hover:shadow-[0_16px_34px_-14px_rgba(255,255,255,0.45)]
-                         disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+              className="btn-aurora mt-1 w-full rounded-[10px] py-3 text-[15px] font-semibold
+                         will-change-transform
+                         disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0"
             >
               {busy ? 'Signing in…' : 'Enter the Smartboard'}
             </button>
