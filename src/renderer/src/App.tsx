@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { useStore } from './store/useStore'
-import { useTheme } from './lib/theme'
 import {
-  IconSun,
-  IconMoon,
   IconChevronLeft,
   IconSearch,
   IconBell,
@@ -82,15 +79,6 @@ function WindowControls(): React.JSX.Element | null {
   )
 }
 
-function ThemeToggle(): React.JSX.Element {
-  const { isDark, setPref } = useTheme()
-  return (
-    <CircleBtn onClick={() => setPref(isDark ? 'light' : 'dark')} title={isDark ? 'Light' : 'Dark'}>
-      {isDark ? <IconSun className="h-[18px] w-[18px]" /> : <IconMoon className="h-[18px] w-[18px]" />}
-    </CircleBtn>
-  )
-}
-
 const CHIPS: { label: string; cat: ProjectCategory }[] = [
   { label: 'Websites', cat: 'website' },
   { label: 'Automations', cat: 'automation' },
@@ -157,7 +145,6 @@ function Topbar(): React.JSX.Element {
         <CircleBtn title="Notifications">
           <IconBell className="h-[18px] w-[18px]" />
         </CircleBtn>
-        <ThemeToggle />
         <CircleBtn onClick={() => setView('settings')} title="Settings">
           <IconSettings className="h-[18px] w-[18px]" />
         </CircleBtn>
@@ -200,7 +187,7 @@ export default function App(): React.JSX.Element {
   return (
     <div className="flex h-full overflow-hidden bg-sidebar text-text">
       <Sidebar />
-      <div className="my-3 mr-3 ml-1 flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-bg shadow-[0_10px_40px_rgba(0,0,0,0.28)]">
+      <div className="my-3 mr-3 ml-1 flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-bg shadow-[0_14px_48px_rgba(0,0,0,0.5)]">
         <Topbar />
         <main
           className={cn(

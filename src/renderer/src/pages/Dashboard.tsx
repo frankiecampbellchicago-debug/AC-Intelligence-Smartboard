@@ -52,13 +52,12 @@ function BarRow({
 function Avatar({ project, size = 36 }: { project: Project; size?: number }): React.JSX.Element {
   return (
     <span
-      className="flex shrink-0 items-center justify-center rounded-full text-sm font-bold"
+      className="flex shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
       style={{
         width: size,
         height: size,
-        background: 'var(--violet)',
-        color: '#fff',
-        border: '1px solid rgba(0,0,0,0.08)'
+        background: 'linear-gradient(135deg, #262c38 0%, #12151c 100%)',
+        border: '1px solid rgba(255,255,255,0.14)'
       }}
     >
       {project.name.charAt(0).toUpperCase()}
@@ -185,21 +184,23 @@ export function Dashboard(): React.JSX.Element {
     <div className="relative flex items-stretch gap-5">
       {/* Ambient color wash so the glass widgets have something to refract. */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-24 -top-10 h-72 w-72 rounded-full bg-[var(--accent)] opacity-[0.12] blur-3xl" />
-        <div className="absolute right-0 top-44 h-80 w-80 rounded-full bg-[var(--violet)] opacity-[0.10] blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-[var(--cyan)] opacity-[0.07] blur-3xl" />
+        <div className="absolute -left-24 -top-10 h-72 w-72 rounded-full bg-[var(--accent)] opacity-[0.05] blur-3xl" />
+        <div className="absolute right-0 top-44 h-80 w-80 rounded-full bg-[var(--violet)] opacity-[0.07] blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-[var(--cyan)] opacity-[0.05] blur-3xl" />
       </div>
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col gap-5">
         {/* Greeting */}
         <div className="flex shrink-0 items-start justify-between gap-4">
           <div>
-            <h1 className="font-display text-[32px] font-bold leading-[1.08] tracking-[-0.01em] text-text">
+            <p className="eyebrow mb-2">Ops Hub</p>
+            <h1 className="font-display text-[32px] font-bold leading-[1.08] text-text">
               {greet}, Kaiden
             </h1>
             <p className="mt-1 max-w-xl text-sm leading-snug tracking-tight text-muted">
-              {total} {total === 1 ? 'project' : 'projects'} tracked, {shipped} shipped and{' '}
-              {building} in progress. Keep building.
+              <span className="tnum">{total}</span> {total === 1 ? 'project' : 'projects'} tracked,{' '}
+              <span className="tnum">{shipped}</span> shipped and <span className="tnum">{building}</span>{' '}
+              in progress. Keep building.
             </p>
           </div>
           <button onClick={() => setView('hub')} className="shrink-0 text-xs font-semibold text-accent hover:underline">
@@ -347,7 +348,7 @@ export function Dashboard(): React.JSX.Element {
             <div className="flex items-center gap-2">
               <span className="font-display text-base font-semibold text-text">Inbox</span>
               {unreadMail > 0 && (
-                <span className="rounded-full bg-accent px-1.5 text-[10px] font-bold text-white">
+                <span className="rounded-full bg-accent px-1.5 text-[10px] font-bold text-[var(--ink-fg)]">
                   {unreadMail}
                 </span>
               )}
@@ -422,7 +423,10 @@ export function Dashboard(): React.JSX.Element {
               >
                 <span
                   className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
-                  style={{ background: 'var(--violet)', border: '1px solid rgba(0,0,0,0.08)' }}
+                  style={{
+                    background: 'linear-gradient(135deg, #262c38 0%, #12151c 100%)',
+                    border: '1px solid rgba(255,255,255,0.14)'
+                  }}
                 >
                   {p.name.charAt(0).toUpperCase()}
                 </span>

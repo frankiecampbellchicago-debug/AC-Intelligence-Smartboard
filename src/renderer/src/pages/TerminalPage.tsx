@@ -170,7 +170,7 @@ export function TerminalPage(): React.JSX.Element {
               <span
                 className={cn(
                   'rounded-full px-1.5 text-[10px] font-bold',
-                  wbOpen ? 'bg-accent text-white' : 'bg-bg text-subtle'
+                  wbOpen ? 'bg-accent text-[var(--ink-fg)]' : 'bg-bg text-subtle'
                 )}
               >
                 {wbItems.length}
@@ -228,7 +228,7 @@ export function TerminalPage(): React.JSX.Element {
           <div className="relative">
             <button
               onClick={() => setMenuOpen((o) => !o)}
-              className="bg-brand inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-95"
+              className="bg-brand inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#07080a] transition hover:opacity-95"
             >
               <IconGlobe className="h-3.5 w-3.5" /> Websites
               <span className="ml-0.5 rounded-full bg-white/25 px-1.5 text-[10px] font-bold">

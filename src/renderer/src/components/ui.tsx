@@ -16,9 +16,9 @@ export function Card({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-surface shadow-[var(--shadow)] transition duration-200',
+        'rounded-[14px] border border-border bg-surface shadow-[var(--shadow)] transition duration-200',
         interactive &&
-          'hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[0_14px_34px_-10px_rgba(20,30,48,0.22)]',
+          'hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[0_22px_44px_-18px_rgba(0,0,0,0.6)]',
         className
       )}
     >
@@ -143,9 +143,13 @@ export function Button({
   disabled?: boolean
 }): React.JSX.Element {
   const styles = {
-    primary: 'bg-ink text-[var(--ink-fg)] hover:opacity-90',
-    ghost: 'text-muted hover:text-text hover:bg-bg',
-    subtle: 'bg-surface text-text border border-border-strong hover:border-text/40',
+    /* Site's btn-solid: white pill, dark text, lift + white bloom on hover. */
+    primary:
+      'bg-ink text-[var(--ink-fg)] hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-14px_rgba(255,255,255,0.4)]',
+    ghost: 'text-muted hover:text-text hover:bg-accent-soft',
+    /* Site's btn-ghost: hairline that lights up. */
+    subtle:
+      'bg-transparent text-text border border-border-strong hover:border-text/60 hover:bg-accent-soft',
     danger: 'text-red hover:bg-red/10'
   }[variant]
   return (
@@ -154,7 +158,7 @@ export function Button({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex items-center justify-center gap-2 rounded-[4px] px-4 py-1.5 text-[13px] font-semibold transition duration-200 will-change-transform disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none',
         styles,
         className
       )}

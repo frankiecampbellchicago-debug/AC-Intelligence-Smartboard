@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Card, Button } from '../components/ui'
-import { useTheme, type ThemePref } from '../lib/theme'
 import { cn } from '../lib/util'
 import { useStore } from '../store/useStore'
 import { useWhiteboard } from '../store/useWhiteboard'
@@ -10,11 +9,6 @@ function isWeb(): boolean {
   return (window as { api?: { platform?: string } }).api?.platform === 'web'
 }
 
-const THEMES: { id: ThemePref; label: string }[] = [
-  { id: 'light', label: 'Light' },
-  { id: 'dark', label: 'Dark' },
-  { id: 'system', label: 'System' }
-]
 
 function GithubCard(): React.JSX.Element {
   const status = useStore((s) => s.githubStatus)
@@ -292,33 +286,17 @@ function ApiKeyCard(): React.JSX.Element {
 }
 
 export function Settings(): React.JSX.Element {
-  const { pref, setPref } = useTheme()
   const count = useStore((s) => s.projects.length)
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
+      <div>
+        <p className="eyebrow mb-2">Configuration</p>
+        <h1 className="font-display text-2xl font-bold text-text">Settings</h1>
+      </div>
       <GithubCard />
       <ApiKeyCard />
       {isWeb() && <BackendUrlCard />}
-      <Card className="p-6">
-        <h3 className="font-semibold text-text">Appearance</h3>
-        <p className="mb-4 mt-1 text-sm text-muted">Choose how Website Cookbook looks.</p>
-        <div className="inline-flex rounded-xl border border-border bg-bg p-1">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setPref(t.id)}
-              className={cn(
-                'rounded-lg px-4 py-2 text-sm font-medium transition',
-                pref === t.id ? 'bg-surface text-text shadow-sm' : 'text-muted hover:text-text'
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </Card>
-
       <Card className="p-6">
         <h3 className="font-semibold text-text">Your data</h3>
         <p className="mt-1 text-sm text-muted">

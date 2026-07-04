@@ -105,12 +105,14 @@ function LevelCard({ level }: { level: Level }): React.JSX.Element {
 export function Wizard(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-4xl space-y-4">
-      <div className="bg-brand relative overflow-hidden rounded-2xl p-6 text-white">
-        <div className="absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/15" />
-        <div className="absolute -bottom-12 right-24 h-28 w-28 rounded-full bg-white/10" />
+      <div className="relative overflow-hidden rounded-[14px] border border-border bg-surface p-6">
+        {/* Faint moonlight bloom — the brand's quiet decoration. */}
+        <div className="pointer-events-none absolute -right-16 -top-20 h-52 w-52 rounded-full bg-white/[0.06] blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-24 right-32 h-40 w-40 rounded-full bg-[var(--violet)] opacity-[0.08] blur-2xl" />
         <div className="relative">
-          <h2 className="text-lg font-bold">The Website Cookbook</h2>
-          <p className="mt-1 max-w-xl text-sm text-white/85">
+          <p className="eyebrow mb-2">The Method</p>
+          <h2 className="font-display text-xl font-bold text-text">The Website Cookbook</h2>
+          <p className="mt-1 max-w-xl text-sm text-muted">
             Seven levels from “just a prompt” to a shipped, search-optimized site. Master each
             level, avoid its trap, and unlock the next.
           </p>

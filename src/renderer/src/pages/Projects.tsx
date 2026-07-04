@@ -343,7 +343,7 @@ function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
                           className={cn(
                             'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition',
                             on
-                              ? 'border-accent bg-accent text-white'
+                              ? 'border-accent bg-accent text-[var(--ink-fg)]'
                               : 'border-border-strong text-transparent'
                           )}
                         >
@@ -416,7 +416,7 @@ function SiteCard({ project }: { project: Project }): React.JSX.Element {
           {canEdit && (
             <button
               onClick={() => openStudio(project.id)}
-              className="bg-brand inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-95"
+              className="bg-brand inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#07080a] transition hover:opacity-95"
             >
               <IconCode className="h-3.5 w-3.5" /> Edit
             </button>
@@ -568,7 +568,7 @@ export function Projects(): React.JSX.Element {
                           e.stopPropagation()
                           openStudio(p.id)
                         }}
-                        className="bg-brand inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-95"
+                        className="bg-brand inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#07080a] transition hover:opacity-95"
                       >
                         <IconCode className="h-3.5 w-3.5" /> Edit
                       </button>
