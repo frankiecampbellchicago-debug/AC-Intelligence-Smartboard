@@ -9,6 +9,7 @@ import '@fontsource/public-sans/800.css'
 import './index.css'
 import App from './App'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { LoginGate } from './components/LoginGate'
 
 // Inject the web API shim when running in a browser (no Electron preload)
 if (!(window as { api?: unknown }).api) {
@@ -20,7 +21,9 @@ if (!(window as { api?: unknown }).api) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <LoginGate>
+        <App />
+      </LoginGate>
     </ErrorBoundary>
   </StrictMode>
 )

@@ -29,6 +29,15 @@ jobs:
         run: npm ci
 
       - name: Build web app
+        # Baked into the bundle so the shared board works with zero user setup.
+        # Set these under the repo's Settings → Secrets and variables → Actions:
+        #   Variable  BACKEND_URL   e.g. https://ac-smartboard.up.railway.app
+        #   Secret    BOARD_SECRET  the same shared secret set on the Railway backend
+        env:
+          # Base path = "/<repo-name>/" so this works on the source repo AND forks.
+          VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_BACKEND_URL: ${{ vars.BACKEND_URL }}
+          VITE_BOARD_SECRET: ${{ secrets.BOARD_SECRET }}
         run: npx vite build --config vite.web.config.ts
 
       - name: Upload Pages artifact

@@ -2,6 +2,11 @@
  * Web API shim — provides the same window.api surface as the Electron preload,
  * implemented with browser-native APIs (localStorage, WebSocket, fetch).
  * Injected in main.tsx when window.api is absent (browser context).
+ *
+ * Shared-board mode: when a backend URL is configured (baked VITE_BACKEND_URL or
+ * localStorage 'wc-backend-url'), GitHub accounts + repos + the project store are
+ * read from / written to the shared server so every visitor sees the same board.
+ * When no backend is configured, everything falls back to per-browser localStorage.
  */
 
 import type { Store, GithubStatus, GithubRepo, TerminalCreateOpts, PrepareResult, Lead, LeadsResult } from '@shared/types'
@@ -15,7 +20,44 @@ const K_THEME = 'wc-theme'
 const K_OPENROUTER = 'wc-openrouter-key'
 const K_ACCOUNTS = 'wc-github-accounts'
 const K_BACKEND = 'wc-backend-url'
+const K_SECRET = 'wc-board-secret'
 const K_LEADS_SHEET = 'wc-leads-sheet-id'
+
+// ── Shared-backend config + client ─────────────────────────────────────────
+
+// Vite inlines VITE_-prefixed env at build time; the deploy workflow bakes these
+// in so neither user has to configure anything. localStorage overrides for dev.
+const ENV = (import.meta as unknown as { env?: Record<string, string> }).env ?? {}
+
+function backendUrl(): string {
+  return ((localStorage.getItem(K_BACKEND) || ENV.VITE_BACKEND_URL || '') as string).replace(/\/$/, '')
+}
+
+function boardSecret(): string {
+  return (localStorage.getItem(K_SECRET) || ENV.VITE_BOARD_SECRET || '') as string
+}
+
+const K_TOKEN = 'wc-auth-token'
+function authToken(): string {
+  return localStorage.getItem(K_TOKEN) || sessionStorage.getItem(K_TOKEN) || ''
+}
+
+/** Fetch against the shared backend, or return null if none is configured. */
+async function boardFetch(path: string, init?: RequestInit): Promise<Response | null> {
+  const base = backendUrl()
+  if (!base) return null
+  const headers: Record<string, string> = {
+    ...((init?.headers as Record<string, string>) ?? {})
+  }
+  // Prefer the login-gate session token; keep the shared secret as a fallback
+  // for servers configured without user login.
+  const token = authToken()
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  const secret = boardSecret()
+  if (secret) headers['X-Board-Secret'] = secret
+  if (init?.body) headers['Content-Type'] = 'application/json'
+  return fetch(base + path, { ...init, headers })
+}
 
 // ── Leads helpers (ported from src/main/leads.ts) ─────────────────────────
 
@@ -95,6 +137,12 @@ function loadStore(): Store {
   return structuredClone(EMPTY_STORE)
 }
 
+function saveLocalStore(store: Store): Store {
+  const validated = StoreSchema.parse(store)
+  localStorage.setItem(K_STORE, JSON.stringify(validated))
+  return validated
+}
+
 function getAccounts(): GithubAccount[] {
   try {
     const raw = localStorage.getItem(K_ACCOUNTS)
@@ -111,7 +159,7 @@ function setAccounts(accounts: GithubAccount[]): void {
   localStorage.setItem(K_ACCOUNTS, JSON.stringify(accounts))
 }
 
-// ── GitHub REST helpers ────────────────────────────────────────────────────
+// ── GitHub REST helpers (local-fallback path only) ─────────────────────────
 
 const GH_HEADERS = (token: string): HeadersInit => ({
   Authorization: `Bearer ${token}`,
@@ -170,7 +218,7 @@ const termExitListeners = new Map<string, Set<() => void>>()
 const termPendingData = new Map<string, string[]>()
 
 function getBackendUrl(): string {
-  return (localStorage.getItem(K_BACKEND) ?? '').replace(/\/$/, '')
+  return backendUrl()
 }
 
 // ── The shim object ────────────────────────────────────────────────────────
@@ -186,19 +234,38 @@ export function createWebApi(): typeof window.api {
     },
 
     store: {
-      get: async () => loadStore(),
+      get: async () => {
+        // Shared board first; fall back to local on any failure.
+        try {
+          const res = await boardFetch('/state')
+          if (res && res.ok) {
+            const data = (await res.json()) as { store?: unknown }
+            const parsed = StoreSchema.safeParse(data.store)
+            if (parsed.success) {
+              localStorage.setItem(K_STORE, JSON.stringify(parsed.data)) // warm local cache
+              return parsed.data
+            }
+          }
+        } catch { /* offline / backend down — use local */ }
+        return loadStore()
+      },
       set: async (store: Store) => {
-        const validated = StoreSchema.parse(store)
-        localStorage.setItem(K_STORE, JSON.stringify(validated))
+        const validated = saveLocalStore(store) // always keep a local copy
+        try {
+          await boardFetch('/state', { method: 'POST', body: JSON.stringify({ store: validated }) })
+        } catch { /* offline — local copy already saved */ }
         return validated
       }
     },
 
     settings: {
-      get: async () => ({ theme: (localStorage.getItem(K_THEME) ?? 'system') as ThemePref }),
+      get: async () => ({
+        theme: (localStorage.getItem(K_THEME) ?? 'system') as ThemePref,
+        leadsSheetId: localStorage.getItem(K_LEADS_SHEET) || DEFAULT_LEADS_SHEET_ID
+      }),
       setTheme: async (theme: ThemePref) => {
         localStorage.setItem(K_THEME, theme)
-        return { theme }
+        return { theme, leadsSheetId: localStorage.getItem(K_LEADS_SHEET) || DEFAULT_LEADS_SHEET_ID }
       },
       shouldUseDark: async () => {
         const t = localStorage.getItem(K_THEME) ?? 'system'
@@ -272,6 +339,11 @@ export function createWebApi(): typeof window.api {
 
     github: {
       status: async (): Promise<GithubStatus> => {
+        // Shared board: read the server's account list.
+        try {
+          const res = await boardFetch('/github/status')
+          if (res && res.ok) return (await res.json()) as GithubStatus
+        } catch { /* fall through to local */ }
         const accounts = getAccounts()
         if (!accounts.length) return { connected: false, reason: 'not-authenticated' }
         return {
@@ -281,6 +353,11 @@ export function createWebApi(): typeof window.api {
         }
       },
       listRepos: async (): Promise<GithubRepo[]> => {
+        // Shared board: server keeps a merged, always-current repo list.
+        try {
+          const res = await boardFetch('/github/repos?refresh=1')
+          if (res && res.ok) return (await res.json()) as GithubRepo[]
+        } catch { /* fall through to local */ }
         const accounts = getAccounts()
         if (!accounts.length) return []
         const seen = new Set<string>()
@@ -297,10 +374,21 @@ export function createWebApi(): typeof window.api {
       },
       addAccount: async (token: string) => {
         if (!token.trim()) return { error: 'Invalid token' }
+        // Shared board: hand the token to the server (encrypted at rest, shared by all).
         try {
-          const res = await fetch('https://api.github.com/user', {
-            headers: GH_HEADERS(token.trim())
+          const res = await boardFetch('/github/accounts', {
+            method: 'POST',
+            body: JSON.stringify({ token: token.trim() })
           })
+          if (res) {
+            const data = (await res.json()) as { login?: string; error?: string }
+            if (res.ok && data.login) return { login: data.login }
+            return { error: data.error || 'Could not connect account' }
+          }
+        } catch { /* fall through to local */ }
+        // Local fallback (no backend configured)
+        try {
+          const res = await fetch('https://api.github.com/user', { headers: GH_HEADERS(token.trim()) })
           if (!res.ok) return { error: 'Token is invalid or GitHub is unreachable' }
           const user = (await res.json()) as { login: string }
           const accounts = getAccounts()
@@ -312,15 +400,23 @@ export function createWebApi(): typeof window.api {
         }
       },
       removeAccount: async (login: string) => {
+        try {
+          const res = await boardFetch(`/github/accounts/${encodeURIComponent(login)}`, { method: 'DELETE' })
+          if (res && res.ok) return
+        } catch { /* fall through to local */ }
         setAccounts(getAccounts().filter(a => a.login !== login))
       }
     },
 
     terminal: {
       create: async (opts: TerminalCreateOpts): Promise<string> => {
-        const backendUrl = getBackendUrl()
-        if (!backendUrl) throw new Error('NO_BACKEND_URL')
-        const wsUrl = backendUrl.replace(/^https/, 'wss').replace(/^http/, 'ws') + '/terminal'
+        const backend = getBackendUrl()
+        if (!backend) throw new Error('NO_BACKEND_URL')
+        const token = authToken()
+        const wsUrl =
+          backend.replace(/^https/, 'wss').replace(/^http/, 'ws') +
+          '/terminal' +
+          (token ? `?token=${encodeURIComponent(token)}` : '')
         const ws = new WebSocket(wsUrl)
 
         return new Promise<string>((resolve, reject) => {
@@ -371,7 +467,6 @@ export function createWebApi(): typeof window.api {
         const listeners = termDataListeners.get(id)
         if (!listeners) return () => {}
         listeners.add(cb)
-        // Flush any buffered data that arrived before onData was registered
         const pending = termPendingData.get(id)
         if (pending && pending.length > 0) {
           const flushed = [...pending]
