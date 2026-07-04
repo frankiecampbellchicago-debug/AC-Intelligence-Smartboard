@@ -4,7 +4,9 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  base: '/AC-Intelligence-Smartboard/',
+  // Base path = the repo name (so forks like AC-Intelligence-Smartboard-1 work too).
+  // The deploy workflow sets VITE_BASE from the repo name; falls back for local builds.
+  base: process.env.VITE_BASE || '/AC-Intelligence-Smartboard/',
   root: resolve(__dirname, 'web'),
   publicDir: false,
   build: {

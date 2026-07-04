@@ -42,8 +42,15 @@ const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ?? '*'
 const BOARD_SECRET = process.env.BOARD_SECRET ?? ''
 const REFRESH_MS = parseInt(process.env.REFRESH_MS ?? '300000', 10)
 
+// ALLOWED_ORIGIN may be '*' or a comma-separated list of allowed site origins
+// (e.g. the fork's Pages URL + Frankie's Pages URL).
+const corsOrigin =
+  ALLOWED_ORIGIN === '*'
+    ? '*'
+    : ALLOWED_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
+
 const app = express()
-app.use(cors({ origin: ALLOWED_ORIGIN }))
+app.use(cors({ origin: corsOrigin }))
 app.use(express.json({ limit: '5mb' }))
 
 app.get('/health', (_req, res) =>
