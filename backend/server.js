@@ -233,6 +233,38 @@ app.delete('/github/accounts/:login', requireAuth, (req, res) => {
   res.json({ ok: true })
 })
 
+// ── Site fleet health (cron-checked, cached) ───────────────────────────────
+
+const FLEET = [
+  { name: 'ac-intelligence', url: 'https://ac-intelligence-nine.vercel.app' },
+  { name: '720tech', url: 'https://720tech.ai' },
+  { name: 'nexoria', url: 'https://kaidena9.github.io/nexoria/' },
+  { name: 'dva-website', url: 'https://dvacontractinginc.com' },
+  { name: 'dva-contracting', url: 'https://kaidena9.github.io/dva-contracting/' }
+]
+let fleetCache = { checkedAt: 0, sites: [] }
+
+async function checkFleet() {
+  const sites = await Promise.all(
+    FLEET.map(async (s) => {
+      const t0 = Date.now()
+      try {
+        const res = await fetch(s.url, { method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(10000) })
+        return { ...s, status: res.status, ok: res.ok, ms: Date.now() - t0 }
+      } catch {
+        return { ...s, status: 0, ok: false, ms: Date.now() - t0 }
+      }
+    })
+  )
+  fleetCache = { checkedAt: Date.now(), sites }
+  return fleetCache
+}
+
+app.get('/fleet', requireAuth, async (_req, res) => {
+  if (Date.now() - fleetCache.checkedAt > 10 * 60 * 1000) await checkFleet()
+  res.json(fleetCache)
+})
+
 // ── Terminal (WebSocket) — unchanged ───────────────────────────────────────
 
 const server = createServer(app)
