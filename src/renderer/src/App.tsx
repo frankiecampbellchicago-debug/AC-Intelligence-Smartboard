@@ -20,6 +20,9 @@ import { Resources } from './pages/Resources'
 import { Settings } from './pages/Settings'
 import { TerminalPage } from './pages/TerminalPage'
 import { Studio } from './pages/Studio'
+import { Ops } from './pages/Ops'
+import { Brain } from './pages/Brain'
+import { Sessions } from './pages/Sessions'
 import ambient from './assets/app-ambient.jpg'
 
 const FULL_BLEED = new Set(['terminal', 'studio'])
@@ -220,6 +223,9 @@ export default function App(): React.JSX.Element {
               {view === 'resources'  && <Resources />}
               {view === 'settings'   && <Settings />}
               {view === 'studio'     && <Studio />}
+              {view === 'ops'        && <Ops />}
+              {view === 'brain'      && <Brain />}
+              {view === 'sessions'   && <Sessions />}
               {termMounted && (
                 <div className={cn('h-full', view === 'terminal' ? '' : 'hidden')}>
                   <TerminalPage />

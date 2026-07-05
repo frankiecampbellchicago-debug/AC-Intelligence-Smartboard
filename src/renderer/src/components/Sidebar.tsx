@@ -11,7 +11,10 @@ import {
   IconBook,
   IconGithub,
   IconSettings,
-  IconLogout
+  IconLogout,
+  IconBolt,
+  IconGlobe,
+  IconCheck
 } from './icons'
 
 type View =
@@ -25,6 +28,9 @@ type View =
   | 'terminal'
   | 'resources'
   | 'settings'
+  | 'ops'
+  | 'brain'
+  | 'sessions'
 
 type Item = { id: View; label: string; Svg: (p: { className?: string }) => React.JSX.Element }
 type Group = { title: string; items: Item[] }
@@ -45,6 +51,14 @@ const GROUPS: Group[] = [
       { id: 'inbox', label: 'Inbox', Svg: IconInbox },
       { id: 'leads', label: 'Leads', Svg: IconLeads },
       { id: 'hub', label: 'GitHub', Svg: IconGithub }
+    ]
+  },
+  {
+    title: 'System',
+    items: [
+      { id: 'ops', label: 'Operations', Svg: IconBolt },
+      { id: 'brain', label: 'Brain', Svg: IconGlobe },
+      { id: 'sessions', label: 'Session Coach', Svg: IconCheck }
     ]
   },
   {

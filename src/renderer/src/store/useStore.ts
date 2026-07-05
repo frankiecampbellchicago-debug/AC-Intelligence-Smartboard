@@ -15,6 +15,9 @@ type View =
   | 'settings'
   | 'terminal'
   | 'studio'
+  | 'ops'
+  | 'brain'
+  | 'sessions'
 
 export interface NewProjectInput {
   name: string
