@@ -40,7 +40,7 @@ export interface EmailProvider {
   send(draft: Draft): EmailMessage
 }
 
-const ACCOUNT = 'kaidena9@gmail.com'
+const ACCOUNT = 'consult@acintelligence.net'
 
 function ago(mins: number): number {
   return Date.now() - mins * 60_000
@@ -166,7 +166,7 @@ export class MockEmailProvider implements EmailProvider {
   send(draft: Draft): EmailMessage {
     return {
       id: `sent-${this.msgs.length + 1}-${draft.subject.slice(0, 6)}`,
-      from: { name: 'Kaiden', email: ACCOUNT },
+      from: { name: 'AC Intelligence', email: ACCOUNT },
       to: draft.to,
       subject: draft.subject || '(no subject)',
       body: draft.body,
