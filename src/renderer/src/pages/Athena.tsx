@@ -24,6 +24,10 @@ const MODELS = [
 const short = (id: string): string => id.split('/').pop()?.replace(/-preview$/, '') || id
 /* Real brand logos, true colors — each provider's own favicon. */
 const DOMAIN: Record<string, string> = { openai: 'openai.com', anthropic: 'anthropic.com', google: 'gemini.google.com', 'x-ai': 'x.ai', deepseek: 'deepseek.com', 'z-ai': 'z.ai', moonshotai: 'moonshot.ai', perplexity: 'perplexity.ai', qwen: 'qwen.ai', mistralai: 'mistral.ai', 'meta-llama': 'meta.com', minimax: 'minimax.io', nvidia: 'nvidia.com', amazon: 'aws.amazon.com', microsoft: 'microsoft.com', tencent: 'tencent.com', xiaomi: 'mi.com', cohere: 'cohere.com' }
+const logoUrl = (id: string): string => {
+  const dom = DOMAIN[id.split('/')[0]]
+  return dom ? `https://www.google.com/s2/favicons?domain=${dom}&sz=128` : ''
+}
 function Logo({ id, size = 18 }: { id: string; size?: number }): React.JSX.Element {
   const prov = id.split('/')[0]
   const dom = DOMAIN[prov]
@@ -358,10 +362,9 @@ export function Athena(): React.JSX.Element {
                   <path key={i} d={`M280 108 C 280 150, ${x * 0.93 + 20} 150, ${x * 0.93 + 20} 190`} fill="none" stroke={editing.workers[i] ? '#c9a227' : 'rgba(201,162,39,.3)'} strokeWidth="1.4" strokeDasharray="5 5" />
                 ))}
                 <g className="nodecirc" onClick={() => setDelegators(delegators.map((d) => d.id === editing.id ? { ...d, operator: d.operator.includes('opus') ? 'anthropic/claude-sonnet-5' : 'anthropic/claude-opus-4.8' } : d))}>
-                  <circle cx="280" cy="62" r="44" fill="rgba(58,47,16,.92)" stroke="#e8c95a" strokeWidth="2" />
-                  <text x="280" y="14" textAnchor="middle" fill="#e8c95a" fontSize="12">👑</text>
-                  <text x="280" y="58" textAnchor="middle" fill="#e8c95a" fontSize="10" fontFamily="Palatino,serif" letterSpacing="1.5">CORE</text>
-                  <text x="280" y="74" textAnchor="middle" fill="#efe6d0" fontSize="11" fontFamily="Palatino,serif">{short(editing.operator)}</text>
+                  <text x="280" y="16" textAnchor="middle" fontSize="14">👑</text>
+                  <image href={logoUrl(editing.operator)} x="252" y="30" width="56" height="56" />
+                  <text x="280" y="106" textAnchor="middle" fill="#efe6d0" fontSize="12" fontFamily="Palatino,serif">{short(editing.operator)}</text>
                 </g>
                 {WXS.map((x, i) => {
                   const cx = x * 0.93 + 20
@@ -370,9 +373,17 @@ export function Athena(): React.JSX.Element {
                   return (
                     <g key={i} className="nodecirc" onClick={() => { if (w) { setWorker(i, null); setSlotSel(i) } else setSlotSel(sel ? null : i) }}>
                       <text x={cx} y="182" textAnchor="middle" fill="#c9a227" fontSize="9" letterSpacing="2" fontFamily="Palatino,serif">EXPERT {i + 1}</text>
-                      <circle cx={cx} cy="235" r="40" fill={w ? 'rgba(20,16,8,.92)' : 'rgba(10,8,4,.55)'} stroke={sel ? '#fff' : w ? '#c9a227' : 'rgba(201,162,39,.4)'} strokeWidth={sel ? 2.5 : 1.6} strokeDasharray={w ? '0' : '6 6'} />
-                      <text x={cx} y="240" textAnchor="middle" fill={w ? '#e8c95a' : '#8d8266'} fontSize="12" fontFamily="Palatino,serif">{w ? short(w).slice(0, 14) : sel ? 'choose…' : 'empty'}</text>
-                      <text x={cx} y="296" textAnchor="middle" fill="#efe6d0" fontSize="11" fontFamily="Palatino,serif">{w ? short(w) : ''}</text>
+                      {w ? (
+                        <>
+                          <image href={logoUrl(w)} x={cx - 26} y="205" width="52" height="52" />
+                          <text x={cx} y="280" textAnchor="middle" fill="#efe6d0" fontSize="12" fontFamily="Palatino,serif">{short(w)}</text>
+                        </>
+                      ) : (
+                        <>
+                          <circle cx={cx} cy="231" r="28" fill="rgba(10,8,4,.45)" stroke={sel ? '#fff' : 'rgba(201,162,39,.4)'} strokeWidth={sel ? 2.5 : 1.4} strokeDasharray="6 6" />
+                          <text x={cx} y="236" textAnchor="middle" fill="#8d8266" fontSize="11" fontFamily="Palatino,serif">{sel ? 'choose…' : 'empty'}</text>
+                        </>
+                      )}
                     </g>
                   )
                 })}
