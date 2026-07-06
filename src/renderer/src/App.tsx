@@ -19,6 +19,7 @@ import { Settings } from './pages/Settings'
 import { Studio } from './pages/Studio'
 import { Ops } from './pages/Ops'
 import { Sessions } from './pages/Sessions'
+import { Athena } from './pages/Athena'
 import ambient from './assets/app-ambient.jpg'
 
 const FULL_BLEED = new Set(['studio'])
@@ -214,6 +215,7 @@ export default function App(): React.JSX.Element {
               {view === 'studio'     && <Studio />}
               {view === 'ops'        && <Ops />}
               {view === 'sessions'   && <Sessions />}
+              {view === 'athena'     && <Athena />}
             </>
           )}
         </main>

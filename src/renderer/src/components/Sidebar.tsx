@@ -27,6 +27,7 @@ type View =
   | 'ops'
   | 'brain'
   | 'sessions'
+  | 'athena'
 
 type Item = { id: View; label: string; Svg: (p: { className?: string }) => React.JSX.Element }
 type Group = { title: string; items: Item[] }
@@ -128,6 +129,23 @@ export function Sidebar(): React.JSX.Element {
             Smartboard
           </div>
         </div>
+      </div>
+
+      {/* ATHENA — deliberately breaks the aurora system: marble + gold. */}
+      <div className="no-drag px-3 pb-2">
+        <button
+          onClick={() => setView('athena')}
+          className="w-full rounded-[3px] border px-3 py-2.5 text-left transition duration-200"
+          style={{
+            fontFamily: "'Palatino','Book Antiqua',Georgia,serif",
+            background: view === 'athena' ? 'linear-gradient(180deg,#3a2f10,#1c1608)' : 'linear-gradient(180deg,#1a1610,#0e0c07)',
+            borderColor: view === 'athena' ? '#e8c95a' : 'rgba(201,162,39,.4)',
+            boxShadow: view === 'athena' ? '0 0 18px -4px rgba(201,162,39,.5)' : 'none'
+          }}
+        >
+          <span className="block text-[13px] tracking-[0.28em]" style={{ color: '#e8c95a' }}>ATHENA</span>
+          <span className="block text-[8.5px] italic tracking-[0.08em]" style={{ color: 'rgba(226,214,182,.6)' }}>the operator · ΑΘΗΝΑ</span>
+        </button>
       </div>
 
       {/* Nav */}
