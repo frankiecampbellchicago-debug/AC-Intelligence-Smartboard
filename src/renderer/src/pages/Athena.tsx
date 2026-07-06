@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { bridgeOnline, fetchStatus, fetchVaultTree } from '../lib/bridge'
+import mural from '../assets/athena-mural.jpg'
 
 /* ============================================================
    ATHENA — the operator deck. Deliberately NOT aurora: ivory,
@@ -142,7 +143,12 @@ export function Athena(): React.JSX.Element {
   }
 
   return (
-    <div className="athena rise-in">
+    <div className="athena rise-in" style={{ position: 'relative' }}>
+      {/* The pantheon fresco — fixed behind everything in this chamber. */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: -1 }} aria-hidden="true">
+        <img src={mural} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(10,8,5,.82), rgba(10,8,5,.9) 40%, rgba(10,8,5,.96))' }} />
+      </div>
       <style>{`
         .athena{--ivory:#f2ead9;--ivory-dim:#c9bfa8;--gold:#c9a227;--gold-hi:#e8c95a;--aegean:#0c1218;--marble:#11181f;--marble-2:#161f28;--line:rgba(201,162,39,.28);
           font-family:'Palatino','Palatino Linotype','Book Antiqua',Georgia,serif;color:var(--ivory);max-width:1060px;margin:0 auto}
