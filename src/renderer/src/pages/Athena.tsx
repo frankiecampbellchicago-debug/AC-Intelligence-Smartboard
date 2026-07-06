@@ -21,7 +21,21 @@ const MODELS = [
   { id: 'deepseek/deepseek-chat-v3.1', label: 'DeepSeek V3.1' },
   { id: 'perplexity/sonar-pro', label: 'Sonar Pro' }
 ]
-const short = (id: string): string => MODELS.find((m) => m.id === id)?.label || id.split('/').pop() || id
+const short = (id: string): string => id.split('/').pop()?.replace(/-preview$/, '') || id
+/* Provider logo via simple-icons CDN (local convenience — visual only). */
+const LOGO_SLUG: Record<string, string> = { openai: 'openai', anthropic: 'anthropic', google: 'googlegemini', 'x-ai': 'x', deepseek: 'deepseek', 'z-ai': 'zhipuai', moonshotai: 'moonshotai', perplexity: 'perplexity', qwen: 'alibabacloud', mistralai: 'mistralai', 'meta-llama': 'meta', nvidia: 'nvidia', amazon: 'amazon', microsoft: 'microsoftazure', tencent: 'tencentqq', xiaomi: 'xiaomi', minimax: 'minimax', 'nousresearch': 'n' }
+function Logo({ id, size = 18 }: { id: string; size?: number }): React.JSX.Element {
+  const prov = id.split('/')[0]
+  const slug = LOGO_SLUG[prov]
+  return slug && slug.length > 1 ? (
+    <img src={`https://cdn.simpleicons.org/${slug}/e8c95a`} width={size} height={size} alt="" style={{ display: 'inline-block', verticalAlign: 'middle' }}
+      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+  ) : (
+    <span style={{ display: 'inline-flex', width: size, height: size, borderRadius: '50%', border: '1px solid #c9a227', color: '#e8c95a', fontSize: size * 0.55, alignItems: 'center', justifyContent: 'center' }}>{prov[0]?.toUpperCase()}</span>
+  )
+}
+/* Frontier bench fallback — replaced by the live OpenRouter catalog when it loads. */
+const BENCH_SEED = ['anthropic/claude-opus-4.8','openai/gpt-5.5','z-ai/glm-5.2','anthropic/claude-sonnet-5','google/gemini-3.1-pro-preview','google/gemini-3.5-flash','x-ai/grok-4','qwen/qwen3-max','deepseek/deepseek-v4','moonshotai/kimi-k2.5','openai/gpt-5.3-codex','anthropic/claude-haiku-4.5','perplexity/sonar-pro','mistralai/mistral-large','meta-llama/llama-4-maverick','minimax/minimax-m2']
 
 interface Delegator { id: string; name: string; operator: string; workers: (string | null)[]; bestFor: string }
 const DEFAULTS: Delegator[] = [
@@ -64,6 +78,25 @@ export function Athena(): React.JSX.Element {
   const [busy, setBusy] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
+  const [bench, setBench] = useState<string[]>(BENCH_SEED)
+  const [maxTok, setMaxTok] = useState<number>(() => Number(localStorage.getItem('athena-maxtok')) || 4096)
+  useEffect(() => { localStorage.setItem('athena-maxtok', String(maxTok)) }, [maxTok])
+  /* Live catalog: pull the real OpenRouter model list so the bench is never capped. */
+  useEffect(() => {
+    void (async () => {
+      try {
+        const r = await fetch('https://openrouter.ai/api/v1/models')
+        const j = await r.json()
+        const prio = ['anthropic/', 'openai/', 'google/', 'x-ai/', 'deepseek/', 'z-ai/', 'qwen/', 'moonshotai/', 'perplexity/', 'mistralai/', 'meta-llama/', 'minimax/']
+        const ids = (j.data as { id: string; created: number }[])
+          .filter((m) => prio.some((p) => m.id.startsWith(p)) && !/embed|whisper|tts|audio|image|vision-only|:free/.test(m.id))
+          .sort((a, b) => b.created - a.created)
+        const seen = new Set<string>(); const top: string[] = []
+        for (const pfx of prio) { for (const m of ids) { if (m.id.startsWith(pfx) && !seen.has(m.id) && top.length < 24) { seen.add(m.id); top.push(m.id); if (top.filter((t) => t.startsWith(pfx)).length >= 3) break } } }
+        if (top.length > 6) setBench(top)
+      } catch { /* keep seed */ }
+    })()
+  }, [])
 
   useEffect(() => { localStorage.setItem('athena-chat', JSON.stringify(msgs.slice(-60))) }, [msgs])
   useEffect(() => { localStorage.setItem('athena-delegators-v2', JSON.stringify(delegators)) }, [delegators])
@@ -113,7 +146,7 @@ export function Athena(): React.JSX.Element {
         } else {
           setBusy('the workers labor…')
           const briefs = workers.map((_, i) => plan.match(new RegExp(`WORKER ${i + 1}:([\\s\\S]*?)(?=WORKER ${i + 2}:|$)`))?.[1]?.trim() || q)
-          const outs = await Promise.all(workers.map((w, i) => llm(w, [{ role: 'user', content: briefs[i] }], undefined, 3000).catch((e) => `⚠ ${e.message}`)))
+          const outs = await Promise.all(workers.map((w, i) => llm(w, [{ role: 'user', content: briefs[i] }], undefined, maxTok).catch((e) => `⚠ ${e.message}`)))
           setBusy('Athena weighs the counsel…')
           const fin = await llm(active.operator, [
             { role: 'system', content: sys },
@@ -126,7 +159,7 @@ export function Athena(): React.JSX.Element {
   }
 
   /* node graph geometry */
-  const OPX = 300, OPY = 60, WY = 210, WXS = [90, 300, 510]
+  const WXS = [90, 300, 510]
 
   return (
     <div className="athena" style={{ position: 'fixed', inset: 0, left: 228, fontFamily: "'Palatino','Book Antiqua',Georgia,serif", color: '#efe6d0', overflow: 'hidden' }}>
@@ -235,58 +268,81 @@ export function Athena(): React.JSX.Element {
       )}
 
       {tab === 'delegation' && (
-        <div style={{ position: 'absolute', top: 50, bottom: 0, left: 0, right: 0, overflowY: 'auto', padding: 24 }}>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
-            {delegators.map((d) => (
-              <button key={d.id} className="rost" style={{ width: 'auto', marginBottom: 0, ...(editId === d.id ? { borderColor: '#e8c95a', color: '#e8c95a' } : {}) }} onClick={() => { setEditId(d.id); setSlotSel(null) }}>{d.name}</button>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 20, justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-            {/* roster */}
-            <div className="glass" style={{ width: 210, borderRadius: 5, padding: 14 }}>
-              <div className="via">The roster — click to place</div>
-              {MODELS.map((m) => (
-                <button key={m.id} className="rost" onClick={() => {
-                  const slot = slotSel ?? editing.workers.findIndex((w) => !w)
-                  if (slot >= 0) { setWorker(slot, m.id); setSlotSel(null) }
-                }}>{m.label}</button>
+        <div style={{ position: 'absolute', top: 50, bottom: 0, left: 0, right: 0, overflowY: 'auto', padding: '18px 26px' }}>
+          {/* header */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 14 }}>
+            <div>
+              <div className="via" style={{ margin: 0 }}>✦ Pantheon · The Ensemble</div>
+              <div style={{ fontSize: 26, letterSpacing: '.18em' }}>MINISTRY OF EXPERTS</div>
+            </div>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+              {delegators.map((d) => (
+                <button key={d.id} className="rost" style={{ width: 'auto', marginBottom: 0, ...(editId === d.id ? { borderColor: '#e8c95a', color: '#e8c95a' } : {}) }} onClick={() => { setEditId(d.id); setSlotSel(null) }}>{d.name.split('·')[0].trim()}</button>
               ))}
-              <div style={{ fontSize: 11, color: '#8d8266', fontStyle: 'italic', marginTop: 6 }}>
-                {slotSel !== null ? `placing into hand ${slotSel + 1}…` : 'click a circle below to empty it, then pick a model'}
+              <button className="rost" style={{ width: 'auto', marginBottom: 0 }} onClick={() => setDelegators(DEFAULTS)}>use default</button>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 18, alignItems: 'stretch', flexWrap: 'wrap' }}>
+            {/* THE BENCH */}
+            <div className="glass" style={{ flex: '1 1 380px', maxWidth: 560, borderRadius: 5, padding: 14 }}>
+              <div className="via">The Bench — click a model, then a seat</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 8 }}>
+                {bench.map((id, rank) => {
+                  const seat = editing.workers.indexOf(id)
+                  const isOp = editing.operator === id
+                  return (
+                    <button key={id} onClick={() => {
+                      const slot = slotSel ?? editing.workers.findIndex((w) => !w)
+                      if (slot >= 0) { setWorker(slot, id); setSlotSel(null) }
+                    }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left', background: 'rgba(10,8,4,.55)', border: `1px solid ${isOp ? '#e8c95a' : seat >= 0 ? '#c9a227' : 'rgba(201,162,39,.25)'}`, borderRadius: 4, padding: '8px 10px', cursor: 'pointer', color: '#efe6d0', fontFamily: 'inherit', position: 'relative' }}>
+                      <Logo id={id} />
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ display: 'block', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{short(id)}</span>
+                        <span style={{ display: 'block', fontSize: 9.5, letterSpacing: '.12em', color: '#c9a227' }}>ARENA #{rank + 1}</span>
+                      </span>
+                      {isOp && <span style={{ position: 'absolute', top: 4, right: 6 }}>👑</span>}
+                      {seat >= 0 && <span style={{ position: 'absolute', top: 4, right: 6, fontSize: 9, border: '1px solid #c9a227', borderRadius: '50%', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e8c95a' }}>{seat + 1}</span>}
+                    </button>
+                  )
+                })}
               </div>
             </div>
-            {/* node graph */}
-            <div className="glass" style={{ borderRadius: 5, padding: 10 }}>
-              <svg width="600" height="290" viewBox="0 0 600 290">
+            {/* ORCHESTRATOR GRAPH */}
+            <div className="glass" style={{ flex: '1 1 420px', borderRadius: 5, padding: 16, display: 'flex', flexDirection: 'column' }}>
+              <div className="via" style={{ textAlign: 'center' }}>Core · Orchestrator</div>
+              <svg width="100%" height="330" viewBox="0 0 560 330">
                 {WXS.map((x, i) => (
-                  <line key={i} x1={OPX} y1={OPY + 34} x2={x} y2={WY - 34} stroke={editing.workers[i] ? '#c9a227' : 'rgba(201,162,39,.25)'} strokeWidth="1.5" strokeDasharray={editing.workers[i] ? '0' : '5 5'} />
+                  <path key={i} d={`M280 108 C 280 150, ${x * 0.93 + 20} 150, ${x * 0.93 + 20} 190`} fill="none" stroke={editing.workers[i] ? '#c9a227' : 'rgba(201,162,39,.3)'} strokeWidth="1.4" strokeDasharray="5 5" />
                 ))}
-                {/* operator */}
-                <circle cx={OPX} cy={OPY} r="34" fill="rgba(58,47,16,.9)" stroke="#e8c95a" strokeWidth="2" />
-                <text x={OPX} y={OPY - 2} textAnchor="middle" fill="#e8c95a" fontSize="11" fontFamily="Palatino,serif" letterSpacing="1">OPERATOR</text>
-                <text x={OPX} y={OPY + 13} textAnchor="middle" fill="#efe6d0" fontSize="10.5" fontFamily="Palatino,serif">{short(editing.operator)}</text>
-                {/* workers */}
+                <g className="nodecirc" onClick={() => setDelegators(delegators.map((d) => d.id === editing.id ? { ...d, operator: d.operator.includes('opus') ? 'anthropic/claude-sonnet-5' : 'anthropic/claude-opus-4.8' } : d))}>
+                  <circle cx="280" cy="62" r="44" fill="rgba(58,47,16,.92)" stroke="#e8c95a" strokeWidth="2" />
+                  <text x="280" y="14" textAnchor="middle" fill="#e8c95a" fontSize="12">👑</text>
+                  <text x="280" y="58" textAnchor="middle" fill="#e8c95a" fontSize="10" fontFamily="Palatino,serif" letterSpacing="1.5">CORE</text>
+                  <text x="280" y="74" textAnchor="middle" fill="#efe6d0" fontSize="11" fontFamily="Palatino,serif">{short(editing.operator)}</text>
+                </g>
                 {WXS.map((x, i) => {
+                  const cx = x * 0.93 + 20
                   const w = editing.workers[i]
                   const sel = slotSel === i
                   return (
                     <g key={i} className="nodecirc" onClick={() => { if (w) { setWorker(i, null); setSlotSel(i) } else setSlotSel(sel ? null : i) }}>
-                      <circle cx={x} cy={WY} r="32" fill={w ? 'rgba(20,16,8,.9)' : 'rgba(10,8,4,.6)'}
-                        stroke={sel ? '#fff' : w ? '#c9a227' : 'rgba(201,162,39,.4)'} strokeWidth={sel ? 2.5 : 1.5} strokeDasharray={w ? '0' : '5 5'} />
-                      <text x={x} y={WY - 2} textAnchor="middle" fill={w ? '#e8c95a' : '#8d8266'} fontSize="10" fontFamily="Palatino,serif" letterSpacing="1">{w ? `HAND ${i + 1}` : sel ? 'CHOOSE…' : 'EMPTY'}</text>
-                      <text x={x} y={WY + 13} textAnchor="middle" fill="#efe6d0" fontSize="10" fontFamily="Palatino,serif">{w ? short(w) : 'click roster'}</text>
+                      <text x={cx} y="182" textAnchor="middle" fill="#c9a227" fontSize="9" letterSpacing="2" fontFamily="Palatino,serif">EXPERT {i + 1}</text>
+                      <circle cx={cx} cy="235" r="40" fill={w ? 'rgba(20,16,8,.92)' : 'rgba(10,8,4,.55)'} stroke={sel ? '#fff' : w ? '#c9a227' : 'rgba(201,162,39,.4)'} strokeWidth={sel ? 2.5 : 1.6} strokeDasharray={w ? '0' : '6 6'} />
+                      <text x={cx} y="240" textAnchor="middle" fill={w ? '#e8c95a' : '#8d8266'} fontSize="12" fontFamily="Palatino,serif">{w ? short(w).slice(0, 14) : sel ? 'choose…' : 'empty'}</text>
+                      <text x={cx} y="296" textAnchor="middle" fill="#efe6d0" fontSize="11" fontFamily="Palatino,serif">{w ? short(w) : ''}</text>
                     </g>
                   )
                 })}
-                <text x="300" y="272" textAnchor="middle" fill="#8d8266" fontSize="11" fontFamily="Palatino,serif" fontStyle="italic">click a filled circle to release its model · click an empty circle, then a roster model to bind it</text>
               </svg>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', padding: '4px 0 8px' }}>
-                <span className="via" style={{ margin: 0, alignSelf: 'center' }}>operator:</span>
-                {['anthropic/claude-opus-4.8', 'anthropic/claude-sonnet-5'].map((m) => (
-                  <button key={m} className="rost" style={{ width: 'auto', marginBottom: 0, ...(editing.operator === m ? { borderColor: '#e8c95a', color: '#e8c95a' } : {}) }}
-                    onClick={() => setDelegators(delegators.map((d) => d.id === editing.id ? { ...d, operator: m } : d))}>{short(m)}</button>
-                ))}
-                <button className="rost" style={{ width: 'auto', marginBottom: 0 }} onClick={() => setDelegators(DEFAULTS)}>restore pantheon</button>
+              {/* MAX TOKENS / CALL */}
+              <div style={{ marginTop: 'auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span className="via" style={{ margin: 0 }}>Max tokens / call</span>
+                  <span style={{ color: '#e8c95a', fontSize: 15 }}>{maxTok.toLocaleString()}</span>
+                </div>
+                <input type="range" min="1024" max="16384" step="512" value={maxTok} onChange={(e) => setMaxTok(Number(e.target.value))} style={{ width: '100%', accentColor: '#c9a227' }} />
+                <div style={{ fontSize: 11, color: '#b9ad92', fontStyle: 'italic' }}>Sweet spot ~4,096 — expert answers stay short and sharp, so the core gets clean signal.</div>
               </div>
             </div>
           </div>
