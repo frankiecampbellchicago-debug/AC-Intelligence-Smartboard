@@ -3,16 +3,12 @@ import { useInbox } from '../store/useInbox'
 import { cn } from '../lib/util'
 import {
   IconDashboard,
-  IconTerminal,
-  IconWhiteboard,
   IconInbox,
   IconLeads,
-  IconResources,
   IconBook,
   IconGithub,
   IconSettings,
   IconLogout,
-  IconBolt,
   IconGlobe,
   IconCheck
 } from './icons'
@@ -38,11 +34,11 @@ type Group = { title: string; items: Item[] }
 /* Grouped navigation — same views as before, organized by intent. */
 const GROUPS: Group[] = [
   {
-    title: 'Workspace',
+    title: 'Command',
     items: [
+      { id: 'ops', label: 'Operations System', Svg: IconGlobe },
       { id: 'dashboard', label: 'Dashboard', Svg: IconDashboard },
-      { id: 'terminal', label: 'Build Wizard', Svg: IconTerminal },
-      { id: 'whiteboard', label: 'Whiteboard', Svg: IconWhiteboard }
+      { id: 'sessions', label: 'Session Coach', Svg: IconCheck }
     ]
   },
   {
@@ -54,19 +50,8 @@ const GROUPS: Group[] = [
     ]
   },
   {
-    title: 'System',
-    items: [
-      { id: 'ops', label: 'Operations', Svg: IconBolt },
-      { id: 'brain', label: 'Brain', Svg: IconGlobe },
-      { id: 'sessions', label: 'Session Coach', Svg: IconCheck }
-    ]
-  },
-  {
     title: 'Library',
-    items: [
-      { id: 'wizard', label: 'Cookbook', Svg: IconBook },
-      { id: 'resources', label: 'Resources', Svg: IconResources }
-    ]
+    items: [{ id: 'wizard', label: 'Cookbook', Svg: IconBook }]
   }
 ]
 

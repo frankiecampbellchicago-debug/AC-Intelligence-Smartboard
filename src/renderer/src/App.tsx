@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { useStore } from './store/useStore'
 import {
@@ -12,20 +12,16 @@ import { cn } from './lib/util'
 import { Hub } from './pages/Hub'
 import { Inbox } from './pages/Inbox'
 import { Leads } from './pages/Leads'
-import { Whiteboard } from './pages/Whiteboard'
 import { Dashboard } from './pages/Dashboard'
 import { Wizard } from './pages/Wizard'
 import { Projects } from './pages/Projects'
-import { Resources } from './pages/Resources'
 import { Settings } from './pages/Settings'
-import { TerminalPage } from './pages/TerminalPage'
 import { Studio } from './pages/Studio'
 import { Ops } from './pages/Ops'
-import { Brain } from './pages/Brain'
 import { Sessions } from './pages/Sessions'
 import ambient from './assets/app-ambient.jpg'
 
-const FULL_BLEED = new Set(['terminal', 'studio'])
+const FULL_BLEED = new Set(['studio'])
 
 function CircleBtn({
   onClick,
@@ -164,11 +160,6 @@ export default function App(): React.JSX.Element {
   const checkGithub = useStore((s) => s.checkGithub)
   const fullBleed = FULL_BLEED.has(view)
 
-  const [termMounted, setTermMounted] = useState(false)
-  useEffect(() => {
-    if (view === 'terminal') setTermMounted(true)
-  }, [view])
-
   useEffect(() => {
     void (async () => {
       await hydrate()
@@ -216,21 +207,13 @@ export default function App(): React.JSX.Element {
               {view === 'hub'        && <Hub />}
               {view === 'inbox'      && <Inbox />}
               {view === 'leads'      && <Leads />}
-              {view === 'whiteboard' && <Whiteboard />}
               {view === 'dashboard'  && <Dashboard />}
               {view === 'wizard'     && <Wizard />}
               {view === 'projects'   && <Projects />}
-              {view === 'resources'  && <Resources />}
               {view === 'settings'   && <Settings />}
               {view === 'studio'     && <Studio />}
               {view === 'ops'        && <Ops />}
-              {view === 'brain'      && <Brain />}
               {view === 'sessions'   && <Sessions />}
-              {termMounted && (
-                <div className={cn('h-full', view === 'terminal' ? '' : 'hidden')}>
-                  <TerminalPage />
-                </div>
-              )}
             </>
           )}
         </main>

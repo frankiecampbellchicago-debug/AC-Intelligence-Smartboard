@@ -73,3 +73,7 @@ export async function fetchFleet(): Promise<{ checkedAt: number; sites: FleetSit
     return null
   }
 }
+
+export interface BrainEvent { t: string; kind: 'tool' | 'say' | 'user'; label: string }
+export const fetchBrainFeed = (): Promise<{ active: boolean; events: BrainEvent[] } | null> =>
+  get('/api/hub/brainfeed', 8000)

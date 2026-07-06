@@ -87,7 +87,7 @@ function schedulePersist(projects: Project[]): void {
 const now = (): number => Date.now()
 
 export const useStore = create<AppState>((set, get) => ({
-  view: 'dashboard',
+  view: 'ops',
   selectedProjectId: null,
   studioProjectId: null,
   setView: (v) => set({ view: v }),

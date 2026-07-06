@@ -212,9 +212,9 @@ export function Dashboard(): React.JSX.Element {
             'linear-gradient(100deg, rgba(7,7,13,.78) 0%, rgba(7,7,13,.45) 46%, rgba(7,7,13,.15) 100%), linear-gradient(0deg, rgba(7,7,13,.72) 0%, transparent 42%)'
         }}
       />
-      <div className="relative px-7 pb-7 pt-9">
+      <div className="relative px-6 pb-5 pt-6">
         <p className="eyebrow">Ops Hub</p>
-        <h1 className="font-display mt-2 text-[38px] font-extrabold leading-[1.05] text-white">
+        <h1 className="font-display mt-2 text-[30px] font-extrabold leading-[1.05] text-white">
           {greet}, <span className="text-brand">Kaiden</span>
         </h1>
         <p className="mt-2 max-w-xl text-sm leading-snug text-white/75">
@@ -228,7 +228,7 @@ export function Dashboard(): React.JSX.Element {
             </>
           )}
         </p>
-        <div className="mt-5 flex flex-wrap items-center gap-2.5">
+        <div className="mt-4 flex flex-wrap items-center gap-2.5">
           <Button onClick={() => void syncFromGitHub()} disabled={githubSyncing}>
             <IconRefresh className={cn('h-4 w-4', githubSyncing && 'animate-spin')} />
             {githubSyncing ? 'Syncing…' : 'Sync GitHub'}

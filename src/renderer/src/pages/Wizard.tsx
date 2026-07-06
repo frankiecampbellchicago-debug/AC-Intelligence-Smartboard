@@ -1,4 +1,4 @@
-import { LEVELS, type Level } from '@shared/levels'
+import { ALL_RESOURCES, LEVELS, type Level } from '@shared/levels'
 import { Card } from '../components/ui'
 import { openExternal, ACCENT_VAR } from '../lib/util'
 import { IconExternal, IconAlert, IconCheck } from '../components/icons'
@@ -121,6 +121,27 @@ export function Wizard(): React.JSX.Element {
       {LEVELS.map((level) => (
         <LevelCard key={level.number} level={level} />
       ))}
+
+      {/* Resources — curated links, folded in from the old Resources tab */}
+      <div className="relative overflow-hidden rounded-[14px] border border-border bg-surface p-6">
+        <p className="eyebrow mb-2">Toolbox</p>
+        <h2 className="font-display text-xl font-bold text-text">Resources</h2>
+        <div className="mt-4 space-y-4">
+          {ALL_RESOURCES.map((group) => (
+            <div key={group.level}>
+              <div className="mb-1.5 text-[10.5px] font-bold uppercase tracking-[0.16em] text-subtle">L{group.level} · {group.title}</div>
+              <div className="flex flex-wrap gap-1.5">
+                {group.links.map((link) => (
+                  <button key={link.url} onClick={() => openExternal(link.url)}
+                    className="rounded-full border border-border bg-white/[0.03] px-3 py-1 text-xs font-medium text-muted transition hover:border-accent/50 hover:text-text">
+                    {link.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
