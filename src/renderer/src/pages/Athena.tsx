@@ -22,13 +22,14 @@ const MODELS = [
   { id: 'perplexity/sonar-pro', label: 'Sonar Pro' }
 ]
 const short = (id: string): string => id.split('/').pop()?.replace(/-preview$/, '') || id
-/* Provider logo via simple-icons CDN (local convenience — visual only). */
-const LOGO_SLUG: Record<string, string> = { openai: 'openai', anthropic: 'anthropic', google: 'googlegemini', 'x-ai': 'x', deepseek: 'deepseek', 'z-ai': 'zhipuai', moonshotai: 'moonshotai', perplexity: 'perplexity', qwen: 'alibabacloud', mistralai: 'mistralai', 'meta-llama': 'meta', nvidia: 'nvidia', amazon: 'amazon', microsoft: 'microsoftazure', tencent: 'tencentqq', xiaomi: 'xiaomi', minimax: 'minimax', 'nousresearch': 'n' }
+/* Real brand logos, true colors — each provider's own favicon. */
+const DOMAIN: Record<string, string> = { openai: 'openai.com', anthropic: 'anthropic.com', google: 'gemini.google.com', 'x-ai': 'x.ai', deepseek: 'deepseek.com', 'z-ai': 'z.ai', moonshotai: 'moonshot.ai', perplexity: 'perplexity.ai', qwen: 'qwen.ai', mistralai: 'mistral.ai', 'meta-llama': 'meta.com', minimax: 'minimax.io', nvidia: 'nvidia.com', amazon: 'aws.amazon.com', microsoft: 'microsoft.com', tencent: 'tencent.com', xiaomi: 'mi.com', cohere: 'cohere.com' }
 function Logo({ id, size = 18 }: { id: string; size?: number }): React.JSX.Element {
   const prov = id.split('/')[0]
-  const slug = LOGO_SLUG[prov]
-  return slug && slug.length > 1 ? (
-    <img src={`https://cdn.simpleicons.org/${slug}/e8c95a`} width={size} height={size} alt="" style={{ display: 'inline-block', verticalAlign: 'middle' }}
+  const dom = DOMAIN[prov]
+  return dom ? (
+    <img src={`https://www.google.com/s2/favicons?domain=${dom}&sz=64`} width={size} height={size} alt=""
+      style={{ display: 'inline-block', verticalAlign: 'middle', borderRadius: 4 }}
       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
   ) : (
     <span style={{ display: 'inline-flex', width: size, height: size, borderRadius: '50%', border: '1px solid #c9a227', color: '#e8c95a', fontSize: size * 0.55, alignItems: 'center', justifyContent: 'center' }}>{prov[0]?.toUpperCase()}</span>
@@ -48,7 +49,7 @@ const DEFAULTS: Delegator[] = [
 interface Msg { role: 'user' | 'assistant'; content: string; via?: string; workings?: { model: string; out: string }[] }
 
 async function llm(model: string, messages: { role: string; content: string }[], effort?: string, maxTokens = 5000): Promise<string> {
-  const body: Record<string, unknown> = { model, messages, max_tokens: maxTokens }
+  const body: Record<string, unknown> = { model, messages, max_tokens: maxTokens, usage: { include: true } }
   if (effort) body.reasoning = { effort }
   const res = await fetch(OR_URL, {
     method: 'POST',
@@ -57,6 +58,14 @@ async function llm(model: string, messages: { role: string; content: string }[],
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data?.error?.message || `OpenRouter ${res.status}`)
+  const cost = Number(data?.usage?.cost || 0)
+  if (cost > 0) {
+    const mk = new Date().toISOString().slice(0, 7)
+    const led = JSON.parse(localStorage.getItem('athena-costs') || '{}')
+    led[mk] = (led[mk] || 0) + cost
+    localStorage.setItem('athena-costs', JSON.stringify(led))
+    window.dispatchEvent(new Event('athena-cost'))
+  }
   return data.choices?.[0]?.message?.content ?? ''
 }
 
@@ -81,6 +90,21 @@ export function Athena(): React.JSX.Element {
   const [bench, setBench] = useState<string[]>(BENCH_SEED)
   const [maxTok, setMaxTok] = useState<number>(() => Number(localStorage.getItem('athena-maxtok')) || 4096)
   useEffect(() => { localStorage.setItem('athena-maxtok', String(maxTok)) }, [maxTok])
+  const [stats, setStats] = useState({ day: 0, month: 0, spend: 0, credits: -1 })
+  useEffect(() => {
+    const refresh = (): void => {
+      const dk = new Date().toISOString().slice(0, 10), mk = dk.slice(0, 7)
+      const mc = JSON.parse(localStorage.getItem('athena-msgcount') || '{}')
+      const led = JSON.parse(localStorage.getItem('athena-costs') || '{}')
+      const month = Object.keys(mc).filter((k) => k.startsWith(mk)).reduce((a, k) => a + mc[k], 0)
+      setStats((s0) => ({ ...s0, day: mc[dk] || 0, month, spend: led[mk] || 0 }))
+      if (keyOf()) void fetch('https://openrouter.ai/api/v1/credits', { headers: { Authorization: `Bearer ${keyOf()}` } })
+        .then((r) => r.json()).then((j) => setStats((s0) => ({ ...s0, credits: (j.data?.total_credits ?? 0) - (j.data?.total_usage ?? 0) }))).catch(() => {})
+    }
+    refresh()
+    window.addEventListener('athena-cost', refresh)
+    return () => window.removeEventListener('athena-cost', refresh)
+  }, [])
   /* Live catalog: pull the real OpenRouter model list so the bench is never capped. */
   useEffect(() => {
     void (async () => {
@@ -126,6 +150,11 @@ export function Athena(): React.JSX.Element {
     if (!q || busy) return
     setErr(null); setInput('')
     setMsgs((m) => [...m, { role: 'user', content: q }])
+    const dk = new Date().toISOString().slice(0, 10)
+    const mc = JSON.parse(localStorage.getItem('athena-msgcount') || '{}')
+    mc[dk] = (mc[dk] || 0) + 1
+    localStorage.setItem('athena-msgcount', JSON.stringify(mc))
+    window.dispatchEvent(new Event('athena-cost'))
     const sys = `You are Athena — Kaiden's operator agent in his Operations System. Direct, wise, concise.\n${brain || '(bridge offline — no personal context)'}`
     const history = msgs.slice(-8).map((m) => ({ role: m.role, content: m.content }))
     try {
@@ -196,8 +225,21 @@ export function Athena(): React.JSX.Element {
 
       {tab === 'chat' && (
         <>
+          {/* stats strip */}
+          <div className="glass" style={{ position: 'absolute', top: 58, left: '50%', transform: 'translateX(-50%)', zIndex: 5, display: 'flex', gap: 26, alignItems: 'center', borderRadius: 6, padding: '9px 22px', fontSize: 12 }}>
+            <span><span className="via" style={{ margin: 0, display: 'block' }}>Messages</span><span style={{ color: '#efe6d0', fontSize: 14 }}>{stats.day} today · {stats.month} this month</span></span>
+            <span><span className="via" style={{ margin: 0, display: 'block' }}>Spend · {new Date().toLocaleString('en-US', { month: 'long' })}</span><span style={{ color: '#e8c95a', fontSize: 14 }}>${stats.spend.toFixed(4)}{stats.credits >= 0 ? ` · $${stats.credits.toFixed(2)} left` : ''}</span></span>
+            <span><span className="via" style={{ margin: 0, display: 'block' }}>{active ? 'Council' : 'Voice'}</span>
+              <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', fontSize: 13, color: '#efe6d0' }}>
+                {active ? (<>
+                  <Logo id={active.operator} size={17} /> {short(active.operator)}
+                  {(active.workers.filter(Boolean) as string[]).map((w) => <Logo key={w} id={w} size={15} />)}
+                </>) : (<><Logo id={model} size={17} /> {short(model)} · {effort}</>)}
+              </span>
+            </span>
+          </div>
           {/* open canvas */}
-          <div style={{ position: 'absolute', top: 50, bottom: 118, left: 0, right: 0, overflowY: 'auto', padding: '28px 0' }}>
+          <div style={{ position: 'absolute', top: 50, bottom: 118, left: 0, right: 0, overflowY: 'auto', padding: '60px 0 28px' }}>
             <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 24px' }}>
               {msgs.length === 0 && (
                 <div style={{ textAlign: 'center', paddingTop: '16vh' }}>
