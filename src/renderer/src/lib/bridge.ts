@@ -89,3 +89,24 @@ export async function runCommand(key: string): Promise<{ id?: number; error?: st
     return await res.json()
   } catch (e) { return { error: (e as Error).message } }
 }
+
+/* Agent conversations (Odin / Athena) — memory, recall & agent-specific grading. */
+export interface AgentGrade { score: number; headline: string; strengths: string[]; improvements: string[]; powerTips: string[]; gradedAt: string }
+export interface AgentSessionRow { id: string; title: string; savedAt: string; msgCount: number; models: string[]; grade: AgentGrade | null }
+export interface AgentMsg { role: 'user' | 'assistant'; content: string }
+export const fetchAgentSessions = (agent: string): Promise<{ sessions: AgentSessionRow[] } | null> => get(`/api/agent/${agent}/sessions`, 12000)
+export const fetchAgentSession = (agent: string, id: string): Promise<{ id: string; title: string; messages: AgentMsg[]; models: string[] } | null> => get(`/api/agent/${agent}/session/${id}`, 12000)
+export async function saveAgentSession(agent: string, id: string, messages: AgentMsg[], models: string[]): Promise<void> {
+  try {
+    await fetch(`${BRIDGE}/api/agent/${agent}/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, messages, models }), signal: AbortSignal.timeout(6000) })
+  } catch { /* offline — kept in localStorage regardless */ }
+}
+export async function gradeAgentSession(agent: string, id: string): Promise<AgentGrade | { error: string }> {
+  try {
+    const res = await fetch(`${BRIDGE}/api/agent/${agent}/sessions/${id}/grade`, { method: 'POST', signal: AbortSignal.timeout(200000) })
+    return await res.json()
+  } catch (e) { return { error: (e as Error).message } }
+}
+export async function gradeAllAgent(agent: string): Promise<{ running: boolean; total: number } | null> {
+  try { const res = await fetch(`${BRIDGE}/api/agent/${agent}/grade-all`, { method: 'POST', signal: AbortSignal.timeout(8000) }); return await res.json() } catch { return null }
+}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { bridgeOnline, fetchStatus, fetchVaultTree } from '../lib/bridge'
+import { bridgeOnline, fetchStatus, fetchVaultTree, saveAgentSession, fetchAgentSessions, fetchAgentSession, type AgentSessionRow } from '../lib/bridge'
 import realm from '../assets/odin-realm.jpg'
 
 /* ============================================================
@@ -72,9 +72,28 @@ export function Odin(): React.JSX.Element {
   const [busy, setBusy] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [queries, setQueries] = useState(() => { try { const l = JSON.parse(localStorage.getItem('odin-queries') || '{}'); return l[new Date().toISOString().slice(0, 7)] || 0 } catch { return 0 } })
+  const [sid, setSid] = useState<string>(() => localStorage.getItem('odin-sid') || (crypto.randomUUID?.() ?? String(Date.now())))
+  const [showHist, setShowHist] = useState(false)
+  const [hist, setHist] = useState<AgentSessionRow[]>([])
+  const usedModels = useRef<Set<string>>(new Set())
   const endRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { localStorage.setItem('odin-chat', JSON.stringify(msgs.slice(-40))) }, [msgs])
+  useEffect(() => { localStorage.setItem('odin-sid', sid) }, [sid])
+
+  // Persist the thread to the vault whenever a reply lands — enables recall + grading.
+  useEffect(() => {
+    if (msgs.length && msgs[msgs.length - 1].role === 'assistant') {
+      void saveAgentSession('odin', sid, msgs.map((m) => ({ role: m.role, content: m.content })), [...usedModels.current])
+    }
+  }, [msgs, sid])
+
+  const loadHist = (): void => { void fetchAgentSessions('odin').then((d) => d && setHist(d.sessions)) }
+  function newThread(): void { setMsgs([]); setErr(null); setSid(crypto.randomUUID?.() ?? String(Date.now())); usedModels.current = new Set(); setShowHist(false) }
+  async function openThread(id: string): Promise<void> {
+    const d = await fetchAgentSession('odin', id)
+    if (d) { setMsgs(d.messages.map((m) => ({ role: m.role, content: m.content }))); setSid(id); usedModels.current = new Set(d.models); setShowHist(false) }
+  }
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, busy])
 
   useEffect(() => {
@@ -110,6 +129,7 @@ export function Odin(): React.JSX.Element {
     const history = msgs.slice(-6).map((m) => ({ role: m.role, content: m.content }))
     try {
       if (!hasKey) throw new Error('Odin needs your Perplexity API key first.')
+      usedModels.current.add(model)
       setBusy(model === 'sonar-deep-research' ? 'the ravens comb every realm — this takes a while…' : 'the ravens fly the nine realms…')
       const reasons = SONAR.find((s) => s.id === model)?.reasons ?? false
       const r = await askOdin(model, [{ role: 'system', content: sys }, ...history, { role: 'user', content: q }], depth, reasons)
@@ -146,12 +166,31 @@ export function Odin(): React.JSX.Element {
       {/* Header */}
       <div className="glass" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, padding: '11px 0', borderLeft: 0, borderRight: 0, borderTop: 0 }}>
         <span className="rune" style={{ position: 'absolute', left: 22, fontSize: 18, color: '#8fd0ff', letterSpacing: '.2em' }}>ᛟᛞᛁᚾ</span>
+        <button onClick={() => { setShowHist((v) => { if (!v) loadHist(); return !v }) }}
+          style={{ position: 'absolute', left: 74, background: 'transparent', border: '1px solid rgba(120,160,210,.3)', color: '#9fc0dc', fontFamily: 'inherit', fontSize: 10.5, letterSpacing: '.1em', padding: '4px 10px', borderRadius: 3, cursor: 'pointer' }}>ᛗ MEMORY</button>
+        <button onClick={newThread}
+          style={{ position: 'absolute', left: 160, background: 'transparent', border: '1px solid rgba(120,160,210,.3)', color: '#9fc0dc', fontFamily: 'inherit', fontSize: 10.5, letterSpacing: '.1em', padding: '4px 10px', borderRadius: 3, cursor: 'pointer' }}>+ NEW</button>
         <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '.34em', color: '#eaf2fb' }}>ODIN</span>
         <span className="cap" style={{ borderLeft: '1px solid rgba(120,160,210,.3)', paddingLeft: 14 }}>the all-father · seeker of wisdom</span>
         <span style={{ position: 'absolute', right: 22, fontSize: 9.5, letterSpacing: '.16em', color: brainOn ? '#8fd0ff' : '#5a6b7d' }}>
           {brainOn ? '◉ RAVENS LINKED' : online === false ? '○ BRIDGE OFFLINE' : '○ LINKING'}
         </span>
       </div>
+
+      {/* Memory drawer — recall past research threads (Perplexity-style history) */}
+      {showHist && (
+        <div className="glass" style={{ position: 'absolute', top: 46, left: 16, width: 320, maxHeight: '70vh', overflowY: 'auto', borderRadius: 6, padding: 12, zIndex: 20 }}>
+          <div className="cap" style={{ marginBottom: 8 }}>ᛗ Memory · past research</div>
+          {hist.length === 0 && <div style={{ fontSize: 12, color: '#8ea9c4' }}>No saved threads yet{online === false ? ' — bridge offline' : ''}.</div>}
+          {hist.map((h) => (
+            <button key={h.id} onClick={() => void openThread(h.id)}
+              style={{ display: 'block', width: '100%', textAlign: 'left', background: h.id === sid ? 'rgba(120,160,210,.15)' : 'transparent', border: '1px solid rgba(120,160,210,.2)', borderRadius: 4, padding: '8px 10px', marginBottom: 6, cursor: 'pointer', color: '#cfe0ee' }}>
+              <span style={{ display: 'block', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.title}</span>
+              <span style={{ display: 'block', fontSize: 9.5, color: '#7089a0', marginTop: 2 }}>{h.savedAt.slice(5, 10)} · {h.msgCount}Q{h.grade ? ` · graded ${h.grade.score}/10` : ''}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Canvas */}
       <div style={{ position: 'absolute', top: 46, bottom: 120, left: 0, right: 0, overflowY: 'auto', padding: '26px 0' }}>

@@ -4,7 +4,7 @@ import '@fontsource/jetbrains-mono/700.css'
 import { cn } from '../lib/util'
 import {
   bridgeOnline, fetchStatus, fetchFleet, fetchVaultTree, fetchBrainFeed, fetchSessions,
-  fetchCommands, fetchJobs, runCommand,
+  fetchCommands, fetchJobs, runCommand, fetchAgentSessions,
   type BridgeStatus, type FleetSite, type BrainEvent, type SessionRow, type DeckCommand, type DeckJob
 } from '../lib/bridge'
 
@@ -214,6 +214,7 @@ export function Ops(): React.JSX.Element {
   const [feed, setFeed] = useState<{ active: boolean; events: BrainEvent[] } | null>(null)
   const [cmds, setCmds] = useState<DeckCommand[]>([])
   const [jobs, setJobs] = useState<DeckJob[]>([])
+  const [odin, setOdin] = useState<{ avg: number | null; n: number }>({ avg: null, n: 0 })
 
   useEffect(() => {
     let stop = false
@@ -236,6 +237,11 @@ export function Ops(): React.JSX.Element {
       void getLifetime().then(setLife)
       void gradeAll().then(setGp)
       void fetchCommands().then((c) => c && setCmds(c))
+      void fetchAgentSessions('odin').then((d) => {
+        if (!d) return
+        const g = d.sessions.filter((s) => s.grade)
+        setOdin({ avg: g.length ? Math.round((g.reduce((a, s) => a + (s.grade?.score ?? 0), 0) / g.length) * 10) / 10 : null, n: g.length })
+      })
       const load = async (): Promise<void> => { const d = await fetchSessions(); if (d) setRows(d.sessions) }
       void load()
       const iv = setInterval(() => { void load(); void gradeAll().then(setGp) }, 30000)
@@ -285,6 +291,7 @@ export function Ops(): React.JSX.Element {
             {SUBS.map((s) => `${s.name} $${s.cost}`).join(' · ')}
           </div>
           <Vital label="SKILL RUNS" value={String(runs)} delta={`≈${savedHours}H SAVED`} series={status?.pulse.runsPerDay} />
+          <Vital label="PERPLEXITY MASTERY" value={odin.avg !== null ? `${odin.avg}/10` : '—'} delta={odin.n ? `ODIN · ${odin.n} GRADED` : 'ODIN · —'} />
 
           <Rule label="DIRECTIVES" tag="WIP.TOP" />
           {(status?.claude.wip ?? []).slice(0, 3).map((w) => (

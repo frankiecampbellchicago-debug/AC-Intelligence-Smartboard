@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { bridgeOnline, fetchStatus, fetchVaultTree } from '../lib/bridge'
+import { bridgeOnline, fetchStatus, fetchVaultTree, saveAgentSession } from '../lib/bridge'
 import odyssey from '../assets/athena-odyssey.jpg'
 import mural from '../assets/athena-mural.jpg'
 import olympus from '../assets/athena-olympus.jpg'
@@ -151,6 +151,15 @@ export function Athena(): React.JSX.Element {
   }, [flagship])
 
   useEffect(() => { localStorage.setItem('athena-chat', JSON.stringify(msgs.slice(-60))) }, [msgs])
+  // Persist the conversation for the Session Coach (Athena track).
+  useEffect(() => {
+    if (msgs.length && msgs[msgs.length - 1].role === 'assistant') {
+      let sid = localStorage.getItem('athena-sid')
+      if (!sid) { sid = crypto.randomUUID?.() ?? String(Date.now()); localStorage.setItem('athena-sid', sid) }
+      const used = [...new Set(msgs.map((m) => m.via).filter(Boolean) as string[])]
+      void saveAgentSession('athena', sid, msgs.map((m) => ({ role: m.role, content: m.content })), used)
+    }
+  }, [msgs])
   useEffect(() => { localStorage.setItem('athena-delegators-v3', JSON.stringify(delegators)) }, [delegators])
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, busy])
 
