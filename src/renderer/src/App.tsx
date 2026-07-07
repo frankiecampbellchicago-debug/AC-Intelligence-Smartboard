@@ -25,6 +25,18 @@ export default function App(): React.JSX.Element {
   const checkGithub = useStore((s) => s.checkGithub)
   const fullBleed = FULL_BLEED.has(view)
 
+  // Auto-fill the OpenRouter key from the local bridge (localhost) if not already set,
+  // so Athena/Odin/Whiteboard work without pasting it — key never enters the public bundle.
+  useEffect(() => {
+    if (localStorage.getItem('wc-openrouter-key')) return
+    void (async () => {
+      try {
+        const cfg = await (await fetch('http://localhost:5177/api/config', { signal: AbortSignal.timeout(5000) })).json()
+        if (cfg?.openrouterKey) localStorage.setItem('wc-openrouter-key', cfg.openrouterKey)
+      } catch { /* bridge offline — paste-once still works */ }
+    })()
+  }, [])
+
   useEffect(() => {
     void (async () => {
       await hydrate()

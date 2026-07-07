@@ -116,6 +116,13 @@ export function Odin(): React.JSX.Element {
     void (async () => {
       const ok = await bridgeOnline(); setOnline(ok)
       if (!ok) return
+      // Auto-fill the OpenRouter key from the local bridge (never in the public bundle).
+      if (!orKey()) {
+        try {
+          const cfg = await (await fetch('http://localhost:5177/api/config', { signal: AbortSignal.timeout(5000) })).json()
+          if (cfg?.openrouterKey) { localStorage.setItem('wc-openrouter-key', cfg.openrouterKey); setHasORKey(true) }
+        } catch { /* stays paste-required */ }
+      }
       const [st, vt] = await Promise.all([fetchStatus(), fetchVaultTree()])
       const wip = st?.claude.wip.map((w) => `${w.project}: ${w.head.slice(0, 60)}`).join('; ') ?? ''
       setBrain(`WHO YOU SERVE: Kaiden Amaro — AC Intelligence (AI consulting; sites ac-intelligence, 720tech, nexoria, dva) + Source Alliance freight automation (AP-Banyan, International-UI). Active work: ${wip}. Vault: ${vt?.notes ?? 0} notes. Ground research in his world; be concrete and cite sources.`)
