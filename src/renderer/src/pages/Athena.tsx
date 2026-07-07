@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { bridgeOnline, fetchStatus, fetchVaultTree } from '../lib/bridge'
 import odyssey from '../assets/athena-odyssey.jpg'
 import mural from '../assets/athena-mural.jpg'
+import olympus from '../assets/athena-olympus.jpg'
 
 /* ============================================================
    ATHENA — Odyssey edition. Open canvas chat, top-tab interfaces,
@@ -23,7 +24,7 @@ const MODELS = [
 ]
 const short = (id: string): string => id.split('/').pop()?.replace(/-preview$/, '') || id
 /* Real brand logos, true colors — each provider's own favicon. */
-const DOMAIN: Record<string, string> = { openai: 'openai.com', anthropic: 'anthropic.com', google: 'gemini.google.com', 'x-ai': 'x.ai', deepseek: 'deepseek.com', 'z-ai': 'z.ai', moonshotai: 'moonshot.ai', perplexity: 'perplexity.ai', qwen: 'qwen.ai', mistralai: 'mistral.ai', 'meta-llama': 'meta.com', minimax: 'minimax.io', nvidia: 'nvidia.com', amazon: 'aws.amazon.com', microsoft: 'microsoft.com', tencent: 'tencent.com', xiaomi: 'mi.com', cohere: 'cohere.com' }
+const DOMAIN: Record<string, string> = { openai: 'openai.com', anthropic: 'claude.ai', google: 'gemini.google.com', 'x-ai': 'x.ai', deepseek: 'deepseek.com', 'z-ai': 'z.ai', moonshotai: 'kimi.com', perplexity: 'perplexity.ai', qwen: 'chat.qwen.ai', mistralai: 'mistral.ai', 'meta-llama': 'llama.com', minimax: 'minimax.io', nvidia: 'nvidia.com', amazon: 'aws.amazon.com', microsoft: 'microsoft.com', tencent: 'tencent.com', xiaomi: 'mi.com', cohere: 'cohere.com' }
 const logoUrl = (id: string): string => {
   const dom = DOMAIN[id.split('/')[0]]
   return dom ? `https://www.google.com/s2/favicons?domain=${dom}&sz=128` : ''
@@ -355,33 +356,48 @@ export function Athena(): React.JSX.Element {
               </div>
             </div>
             {/* ORCHESTRATOR GRAPH */}
-            <div className="glass" style={{ flex: '1 1 420px', borderRadius: 5, padding: 16, display: 'flex', flexDirection: 'column' }}>
+            <div className="glass" style={{ flex: '1 1 420px', borderRadius: 5, padding: 16, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+              <img src={olympus} alt="" aria-hidden="true" draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: .55 }} />
+              <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(10,8,4,.55), rgba(10,8,4,.8))' }} />
+              <div style={{ position: 'relative' }}>
               <div className="via" style={{ textAlign: 'center' }}>Core · Orchestrator</div>
-              <svg width="100%" height="330" viewBox="0 0 560 330">
-                {WXS.map((x, i) => (
-                  <path key={i} d={`M280 108 C 280 150, ${x * 0.93 + 20} 150, ${x * 0.93 + 20} 190`} fill="none" stroke={editing.workers[i] ? '#c9a227' : 'rgba(201,162,39,.3)'} strokeWidth="1.4" strokeDasharray="5 5" />
-                ))}
+              <svg width="100%" height="322" viewBox="0 0 560 322">
+                <defs>
+                  <clipPath id="coreClip"><circle cx="280" cy="66" r="30" /></clipPath>
+                  {WXS.map((x, i) => <clipPath key={i} id={`expClip${i}`}><circle cx={x * 0.93 + 20} cy="248" r="27" /></clipPath>)}
+                </defs>
+                {/* feeds: start below the core name, end above the EXPERT captions */}
+                {WXS.map((x, i) => {
+                  const cx = x * 0.93 + 20
+                  return <path key={i} d={`M 280 126 C 280 165, ${cx} 158, ${cx} 196`} fill="none" stroke={editing.workers[i] ? 'rgba(232,201,90,.85)' : 'rgba(201,162,39,.3)'} strokeWidth="1.4" strokeDasharray="5 5" />
+                })}
+                {/* CORE — circular logo, white ring, crown above, name below */}
                 <g className="nodecirc" onClick={() => setDelegators(delegators.map((d) => d.id === editing.id ? { ...d, operator: d.operator.includes('opus') ? 'anthropic/claude-sonnet-5' : 'anthropic/claude-opus-4.8' } : d))}>
-                  <text x="280" y="16" textAnchor="middle" fontSize="14">👑</text>
-                  <image href={logoUrl(editing.operator)} x="252" y="30" width="56" height="56" />
-                  <text x="280" y="106" textAnchor="middle" fill="#efe6d0" fontSize="12" fontFamily="Palatino,serif">{short(editing.operator)}</text>
+                  <text x="280" y="22" textAnchor="middle" fontSize="15">👑</text>
+                  <circle cx="280" cy="66" r="30" fill="#0d0a05" />
+                  <image href={logoUrl(editing.operator)} x="252" y="38" width="56" height="56" clipPath="url(#coreClip)" preserveAspectRatio="xMidYMid slice" />
+                  <circle cx="280" cy="66" r="30" fill="none" stroke="#ffffff" strokeWidth="2.2" />
+                  <text x="280" y="116" textAnchor="middle" fill="#efe6d0" fontSize="12.5" fontFamily="Palatino,serif">{short(editing.operator)}</text>
                 </g>
+                {/* EXPERTS — circular logos with white rings */}
                 {WXS.map((x, i) => {
                   const cx = x * 0.93 + 20
                   const w = editing.workers[i]
                   const sel = slotSel === i
                   return (
                     <g key={i} className="nodecirc" onClick={() => { if (w) { setWorker(i, null); setSlotSel(i) } else setSlotSel(sel ? null : i) }}>
-                      <text x={cx} y="182" textAnchor="middle" fill="#c9a227" fontSize="9" letterSpacing="2" fontFamily="Palatino,serif">EXPERT {i + 1}</text>
+                      <text x={cx} y="212" textAnchor="middle" fill="#c9a227" fontSize="9" letterSpacing="2" fontFamily="Palatino,serif">EXPERT {i + 1}</text>
                       {w ? (
                         <>
-                          <image href={logoUrl(w)} x={cx - 26} y="205" width="52" height="52" />
-                          <text x={cx} y="280" textAnchor="middle" fill="#efe6d0" fontSize="12" fontFamily="Palatino,serif">{short(w)}</text>
+                          <circle cx={cx} cy="248" r="27" fill="#0d0a05" />
+                          <image href={logoUrl(w)} x={cx - 25} y="223" width="50" height="50" clipPath={`url(#expClip${i})`} preserveAspectRatio="xMidYMid slice" />
+                          <circle cx={cx} cy="248" r="27" fill="none" stroke="#ffffff" strokeWidth="2" />
+                          <text x={cx} y="297" textAnchor="middle" fill="#efe6d0" fontSize="12" fontFamily="Palatino,serif">{short(w)}</text>
                         </>
                       ) : (
                         <>
-                          <circle cx={cx} cy="231" r="28" fill="rgba(10,8,4,.45)" stroke={sel ? '#fff' : 'rgba(201,162,39,.4)'} strokeWidth={sel ? 2.5 : 1.4} strokeDasharray="6 6" />
-                          <text x={cx} y="236" textAnchor="middle" fill="#8d8266" fontSize="11" fontFamily="Palatino,serif">{sel ? 'choose…' : 'empty'}</text>
+                          <circle cx={cx} cy="248" r="27" fill="rgba(10,8,4,.45)" stroke={sel ? '#fff' : 'rgba(255,255,255,.35)'} strokeWidth={sel ? 2.4 : 1.4} strokeDasharray="6 6" />
+                          <text x={cx} y="253" textAnchor="middle" fill="#b9ad92" fontSize="11" fontFamily="Palatino,serif">{sel ? 'choose…' : 'empty'}</text>
                         </>
                       )}
                     </g>
@@ -396,6 +412,7 @@ export function Athena(): React.JSX.Element {
                 </div>
                 <input type="range" min="1024" max="16384" step="512" value={maxTok} onChange={(e) => setMaxTok(Number(e.target.value))} style={{ width: '100%', accentColor: '#c9a227' }} />
                 <div style={{ fontSize: 11, color: '#b9ad92', fontStyle: 'italic' }}>Sweet spot ~4,096 — expert answers stay short and sharp, so the core gets clean signal.</div>
+              </div>
               </div>
             </div>
           </div>
