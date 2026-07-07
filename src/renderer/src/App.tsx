@@ -15,7 +15,7 @@ import { Athena } from './pages/Athena'
 import { Odin } from './pages/Odin'
 import ambient from './assets/app-ambient.jpg'
 
-const FULL_BLEED = new Set(['studio'])
+const FULL_BLEED = new Set(['studio', 'ops'])
 
 
 export default function App(): React.JSX.Element {

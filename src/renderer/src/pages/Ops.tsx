@@ -162,12 +162,12 @@ function Brain({ notes, active }: { notes: number; active: boolean; tempo?: numb
     draw()
     return () => cancelAnimationFrame(raf)
   }, [notes])
-  return <canvas ref={ref} style={{ width: 600, height: 600, maxWidth: '54vw' }} aria-hidden="true" />
+  return <canvas ref={ref} style={{ width: 'min(52vh, 42vw)', height: 'min(52vh, 42vw)' }} aria-hidden="true" />
 }
 
 function Rule({ label, tag }: { label: string; tag?: string }): React.JSX.Element {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'clamp(6px, 1.2vh, 11px)' }}>
       <span style={{ fontSize: 10, letterSpacing: '.28em', color: 'var(--text-muted)', fontWeight: 700 }}>{label}</span>
       {tag && <span style={{ fontSize: 9, letterSpacing: '.2em', color: 'var(--text-subtle)' }}>{tag}</span>}
       <span style={{ flex: 1, borderTop: '1px dashed rgba(150,140,255,.2)' }} />
@@ -177,12 +177,12 @@ function Rule({ label, tag }: { label: string; tag?: string }): React.JSX.Elemen
 
 function Vital({ label, delta, value, series }: { label: string; delta?: string; value: string; series?: number[] }): React.JSX.Element {
   return (
-    <div style={{ marginBottom: 22 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, letterSpacing: '.18em', color: 'var(--text-subtle)' }}>
+    <div style={{ marginBottom: 'clamp(8px, 1.6vh, 16px)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9.5, letterSpacing: '.16em', color: 'var(--text-subtle)' }}>
         <span>• {label}</span>{delta && <span style={{ color: 'var(--accent)' }}>{delta}</span>}
       </div>
-      <div className="tnum" style={{ fontSize: 40, fontWeight: 700, lineHeight: 1.15, color: 'var(--text)' }}>{value}</div>
-      {series && series.length > 1 && <Spark data={series} />}
+      <div className="tnum" style={{ fontSize: 'clamp(22px, 3.4vh, 34px)', fontWeight: 700, lineHeight: 1.1, color: 'var(--text)' }}>{value}</div>
+      {series && series.length > 1 && <Spark data={series} h={20} />}
     </div>
   )
 }
@@ -259,7 +259,7 @@ export function Ops(): React.JSX.Element {
   const upSites = fleet?.filter((s) => s.ok).length ?? 0
 
   return (
-    <div className="rise-in" style={{ fontFamily: MONO, minHeight: '100%', position: 'relative', padding: '18px 28px 34px', overflowX: 'hidden' }}>
+    <div className="rise-in" style={{ fontFamily: MONO, height: '100%', position: 'relative', padding: '14px 26px 16px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* grid floor behind the brain */}
       <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '30%', height: '46%', zIndex: -1, opacity: .16,
         backgroundImage: 'linear-gradient(rgba(150,140,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(150,140,255,.5) 1px, transparent 1px)',
@@ -279,10 +279,10 @@ export function Ops(): React.JSX.Element {
         <Clock />
       </div>
 
-      {/* main grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '250px minmax(0,1fr) 264px', gap: 24, marginTop: 10, maxWidth: 1280, marginInline: 'auto' }}>
+      {/* main grid — fills remaining height, no scroll */}
+      <div style={{ display: 'grid', gridTemplateColumns: '240px minmax(0,1fr) 256px', gap: 22, marginTop: 6, maxWidth: 1280, marginInline: 'auto', width: '100%', flex: 1, minHeight: 0, overflow: 'hidden' }}>
         {/* LEFT — SYSTEM VITALS */}
-        <div>
+        <div style={{ minHeight: 0, overflow: 'hidden' }}>
           <Rule label="SYSTEM VITALS" tag="CLAUDE.LINK" />
           <Vital label="LIFETIME CHATS" value={life ? life.msgs.toLocaleString() : '—'} delta={life ? `${life.sessions} SESSIONS` : undefined} />
           <Vital label="TIME IN SESSION" value={life ? `${Math.round(life.hours).toLocaleString()}H` : '—'} />
@@ -304,29 +304,29 @@ export function Ops(): React.JSX.Element {
         </div>
 
         {/* CENTER — THE MIND */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 0, overflow: 'hidden' }}>
           <Brain notes={notes || 23} active={feed?.active ?? false} tempo={(feed?.events.length ?? 0) / 6} />
-          <div style={{ marginTop: -34, textAlign: 'center', position: 'relative' }}>
-            <div style={{ fontSize: 10, letterSpacing: '.3em', color: 'var(--text-muted)' }}>PRIMARY DIRECTIVE · CLAUDE MASTERY</div>
-            <div className="tnum" style={{ fontSize: 72, fontWeight: 700, lineHeight: 1.05, color: 'var(--text)' }}>
-              {avg !== null ? avg.toFixed(1) : '—'}<span style={{ fontSize: 22, color: 'var(--text-muted)', letterSpacing: '.2em' }}> /10</span>
+          <div style={{ marginTop: 'min(-4vh, -24px)', textAlign: 'center', position: 'relative' }}>
+            <div style={{ fontSize: 9.5, letterSpacing: '.3em', color: 'var(--text-muted)' }}>PRIMARY DIRECTIVE · CLAUDE MASTERY</div>
+            <div className="tnum" style={{ fontSize: 'clamp(40px, 7vh, 68px)', fontWeight: 700, lineHeight: 1.02, color: 'var(--text)' }}>
+              {avg !== null ? avg.toFixed(1) : '—'}<span style={{ fontSize: '0.32em', color: 'var(--text-muted)', letterSpacing: '.2em' }}> /10</span>
             </div>
-            <div style={{ width: 330, height: 3, background: 'rgba(150,140,255,.15)', margin: '10px auto 8px', borderRadius: 2 }}>
+            <div style={{ width: 300, maxWidth: '80%', height: 3, background: 'rgba(150,140,255,.15)', margin: '8px auto 7px', borderRadius: 2 }}>
               <div style={{ width: `${((avg ?? 0) / 10) * 100}%`, height: '100%', background: 'linear-gradient(90deg,var(--brand-from),var(--brand-to))', borderRadius: 2, boxShadow: '0 0 12px rgba(140,100,255,.6)' }} />
             </div>
-            <div className="tnum" style={{ fontSize: 10.5, letterSpacing: '.2em', color: 'var(--text-muted)' }}>
+            <div className="tnum" style={{ fontSize: 10, letterSpacing: '.18em', color: 'var(--text-muted)' }}>
               GRADED {graded.length}/{rows.length || '—'} · MEMORIES {notes} · SITES {upSites}/{fleet?.length ?? '—'} UP
             </div>
             {feed?.events.length ? (
-              <div style={{ fontSize: 10.5, color: 'var(--text-subtle)', marginTop: 10, letterSpacing: '.06em' }}>
-                latest thought — <span style={{ color: 'var(--cyan)' }}>{feed.events[feed.events.length - 1].label.slice(0, 76)}</span>
+              <div style={{ fontSize: 10, color: 'var(--text-subtle)', marginTop: 7, letterSpacing: '.06em', maxWidth: 380 }}>
+                latest thought — <span style={{ color: 'var(--cyan)' }}>{feed.events[feed.events.length - 1].label.slice(0, 64)}</span>
               </div>
             ) : null}
           </div>
         </div>
 
         {/* RIGHT — COMMAND DECK + SITES + TRAIL */}
-        <div style={{ minWidth: 0 }}>
+        <div style={{ minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
           <Rule label="COMMAND DECK" tag={running ? `RUN · ${running.key.toUpperCase().slice(0, 10)}` : 'IDLE'} />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px', marginBottom: 6 }}>
             {cmds.map((c) => (
