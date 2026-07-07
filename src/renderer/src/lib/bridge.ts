@@ -110,3 +110,12 @@ export async function gradeAgentSession(agent: string, id: string): Promise<Agen
 export async function gradeAllAgent(agent: string): Promise<{ running: boolean; total: number } | null> {
   try { const res = await fetch(`${BRIDGE}/api/agent/${agent}/grade-all`, { method: 'POST', signal: AbortSignal.timeout(8000) }); return await res.json() } catch { return null }
 }
+
+/* Coaching report — aggregate insights across all graded sessions of a source. */
+export interface CoachReport {
+  source: string; count: number; avg: number | null
+  trend: number[]; distribution: Record<string, number>
+  topFixes: string[]; strengths: string[]
+}
+export const fetchCoachReport = (source: string): Promise<CoachReport | null> =>
+  get(`/api/hub/coach-report?source=${source}`, 130000)

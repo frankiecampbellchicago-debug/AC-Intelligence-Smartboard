@@ -415,7 +415,6 @@ export function Athena(): React.JSX.Element {
                 })}
                 {/* CORE — click to arm/place; holding a model drops it here (and pins it) */}
                 <g className="nodecirc" onClick={() => onSeat(-1, true)} style={{ cursor: 'pointer' }}>
-                  <text x="280" y="22" textAnchor="middle" fontSize="15">👑</text>
                   <circle cx="280" cy="66" r={slotSel === -1 ? 33 : 30} fill="#f7f3e8" stroke={slotSel === -1 ? '#fff' : 'none'} strokeWidth={slotSel === -1 ? 2.5 : 0} />
                   <image href={logoUrl(editing.operator)} x="262" y="48" width="36" height="36" preserveAspectRatio="xMidYMid meet" />
                   <text x="280" y="116" textAnchor="middle" fill="#efe6d0" fontSize="12.5" fontFamily="Palatino,serif">{short(editing.operator)}</text>
