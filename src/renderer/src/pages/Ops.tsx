@@ -162,7 +162,7 @@ function Brain({ notes, active }: { notes: number; active: boolean; tempo?: numb
     draw()
     return () => cancelAnimationFrame(raf)
   }, [notes])
-  return <canvas ref={ref} style={{ width: 'min(52vh, 42vw)', height: 'min(52vh, 42vw)' }} aria-hidden="true" />
+  return <canvas ref={ref} style={{ width: 'min(58vh, 47vw)', height: 'min(58vh, 47vw)' }} aria-hidden="true" />
 }
 
 function Rule({ label, tag }: { label: string; tag?: string }): React.JSX.Element {
@@ -304,7 +304,7 @@ export function Ops(): React.JSX.Element {
         </div>
 
         {/* CENTER — THE MIND */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 0, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', minHeight: 0, overflow: 'hidden', marginTop: '-2vh' }}>
           <Brain notes={notes || 23} active={feed?.active ?? false} tempo={(feed?.events.length ?? 0) / 6} />
           <div style={{ marginTop: 'min(-4vh, -24px)', textAlign: 'center', position: 'relative' }}>
             <div style={{ fontSize: 9.5, letterSpacing: '.3em', color: 'var(--text-muted)' }}>PRIMARY DIRECTIVE · CLAUDE MASTERY</div>
