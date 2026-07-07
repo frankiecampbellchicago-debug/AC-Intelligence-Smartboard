@@ -241,7 +241,7 @@ export function Ops(): React.JSX.Element {
   const upSites = fleet?.filter((s) => s.ok).length ?? 0
 
   return (
-    <div className="rise-in" style={{ fontFamily: MONO, minHeight: '100%', position: 'relative', padding: '18px 28px 34px' }}>
+    <div className="rise-in" style={{ fontFamily: MONO, minHeight: '100%', position: 'relative', padding: '18px 28px 34px', overflowX: 'hidden' }}>
       {/* grid floor behind the brain */}
       <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '30%', height: '46%', zIndex: -1, opacity: .16,
         backgroundImage: 'linear-gradient(rgba(150,140,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(150,140,255,.5) 1px, transparent 1px)',
@@ -262,7 +262,7 @@ export function Ops(): React.JSX.Element {
       </div>
 
       {/* main grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr 250px', gap: 24, marginTop: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '250px minmax(0,1fr) 264px', gap: 24, marginTop: 10, maxWidth: 1280, marginInline: 'auto' }}>
         {/* LEFT — SYSTEM VITALS */}
         <div>
           <Rule label="SYSTEM VITALS" tag="CLAUDE.LINK" />
@@ -307,15 +307,16 @@ export function Ops(): React.JSX.Element {
         </div>
 
         {/* RIGHT — COMMAND DECK + SITES + TRAIL */}
-        <div>
-          <Rule label="COMMAND DECK" tag={running ? `RUNNING · ${running.key.toUpperCase()}` : 'IDLE'} />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px 10px', marginBottom: 6 }}>
+        <div style={{ minWidth: 0 }}>
+          <Rule label="COMMAND DECK" tag={running ? `RUN · ${running.key.toUpperCase().slice(0, 10)}` : 'IDLE'} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px', marginBottom: 6 }}>
             {cmds.map((c) => (
               <button key={c.key} onClick={() => void runCommand(c.key).then(() => fetchJobs().then((j) => j && setJobs(j)))}
                 disabled={!!running}
-                style={{ background: 'transparent', border: 0, textAlign: 'left', cursor: running ? 'wait' : 'pointer', fontFamily: MONO, fontSize: 10.5, letterSpacing: '.14em', color: running?.key === c.key ? 'var(--amber)' : 'var(--text-muted)', padding: 0 }}
-                onMouseEnter={(e) => { (e.target as HTMLElement).style.color = 'var(--accent)' }}
-                onMouseLeave={(e) => { (e.target as HTMLElement).style.color = running?.key === c.key ? 'var(--amber)' : 'var(--text-muted)' }}>
+                title={c.key.toUpperCase().replace(/-/g, ' ')}
+                style={{ background: 'transparent', border: 0, textAlign: 'left', cursor: running ? 'wait' : 'pointer', fontFamily: MONO, fontSize: 10, letterSpacing: '.06em', color: running?.key === c.key ? 'var(--amber)' : 'var(--text-muted)', padding: 0, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)' }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = running?.key === c.key ? 'var(--amber)' : 'var(--text-muted)' }}>
                 • {c.key.toUpperCase().replace(/-/g, ' ')}
               </button>
             ))}
@@ -336,9 +337,9 @@ export function Ops(): React.JSX.Element {
 
           <Rule label="RUN TRAIL" tag="VAULT" />
           {(status?.claude.runs ?? []).slice(0, 5).map((r, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-muted)', marginBottom: 7 }}>
-              <span>{r.skill} <span style={{ color: r.verdict.includes('ok') ? 'var(--green)' : 'var(--amber)' }}>{r.verdict}</span></span>
-              <span className="tnum" style={{ color: 'var(--text-subtle)', fontSize: 10 }}>{r.when.slice(5, 10)}</span>
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 11, color: 'var(--text-muted)', marginBottom: 7 }}>
+              <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.skill} <span style={{ color: r.verdict.includes('ok') ? 'var(--green)' : 'var(--amber)' }}>{r.verdict}</span></span>
+              <span className="tnum" style={{ color: 'var(--text-subtle)', fontSize: 10, flexShrink: 0 }}>{r.when.slice(5, 10)}</span>
             </div>
           ))}
         </div>
