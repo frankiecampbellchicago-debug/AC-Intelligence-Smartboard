@@ -77,3 +77,15 @@ export async function fetchFleet(): Promise<{ checkedAt: number; sites: FleetSit
 export interface BrainEvent { t: string; kind: 'tool' | 'say' | 'user'; label: string }
 export const fetchBrainFeed = (): Promise<{ active: boolean; events: BrainEvent[] } | null> =>
   get('/api/hub/brainfeed', 8000)
+
+/* Command deck — allowlisted read-only/dry-run skills on the bridge. */
+export interface DeckCommand { key: string; prompt: string }
+export interface DeckJob { id: number; key: string; status: string; startedAt: string; endedAt: string | null; tail?: string }
+export const fetchCommands = (): Promise<DeckCommand[] | null> => get('/api/commands', 8000)
+export const fetchJobs = (): Promise<DeckJob[] | null> => get('/api/jobs', 8000)
+export async function runCommand(key: string): Promise<{ id?: number; error?: string }> {
+  try {
+    const res = await fetch('http://localhost:5177/api/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }), signal: AbortSignal.timeout(8000) })
+    return await res.json()
+  } catch (e) { return { error: (e as Error).message } }
+}
