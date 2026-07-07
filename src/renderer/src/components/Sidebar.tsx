@@ -3,6 +3,7 @@ import { useInbox } from '../store/useInbox'
 import { cn } from '../lib/util'
 import athenaBtn from '../assets/athena-btn.jpg'
 import odinBtn from '../assets/odin-btn.jpg'
+import coachBtn from '../assets/coach-btn.jpg'
 import {
   IconInbox,
   IconLeads,
@@ -10,8 +11,7 @@ import {
   IconGithub,
   IconSettings,
   IconLogout,
-  IconGlobe,
-  IconCheck
+  IconGlobe
 } from './icons'
 
 type View =
@@ -39,8 +39,7 @@ const GROUPS: Group[] = [
   {
     title: 'Command',
     items: [
-      { id: 'ops', label: 'Operations System', Svg: IconGlobe },
-      { id: 'sessions', label: 'Session Coach', Svg: IconCheck }
+      { id: 'ops', label: 'Operations System', Svg: IconGlobe }
     ]
   },
   {
@@ -163,6 +162,25 @@ export function Sidebar(): React.JSX.Element {
         >
           <span className="block text-[13.5px] font-bold tracking-[0.28em]" style={{ color: '#cfe6ff', textShadow: '0 1px 6px rgba(0,0,0,.9)' }}>ODIN</span>
           <span className="mt-0.5 block text-[8.5px] tracking-[0.1em]" style={{ color: 'rgba(190,216,242,.85)', textShadow: '0 1px 5px rgba(0,0,0,.9)' }}>the seeker · ᛟᛞᛁᚾ</span>
+        </button>
+      </div>
+
+      {/* SESSION COACH — the arena: your performance, judged. */}
+      <div className="no-drag px-3 pb-2">
+        <button
+          onClick={() => setView('sessions')}
+          className="relative w-full overflow-hidden rounded-[4px] border px-3 py-2.5 text-left leading-none transition duration-200"
+          style={{
+            fontFamily: "'Palatino','Book Antiqua',Georgia,serif",
+            backgroundImage: `linear-gradient(90deg, rgba(12,7,3,.9) 0%, rgba(12,7,3,.66) 55%, rgba(12,7,3,.42) 100%), url(${coachBtn})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            borderColor: view === 'sessions' ? '#e6a355' : 'rgba(214,150,80,.4)',
+            boxShadow: view === 'sessions' ? '0 0 18px -4px rgba(230,163,85,.6)' : 'none'
+          }}
+        >
+          <span className="block text-[13px] tracking-[0.2em]" style={{ color: '#f0c88a', textShadow: '0 1px 6px rgba(0,0,0,.9)' }}>SESSION COACH</span>
+          <span className="mt-0.5 block text-[8.5px] italic tracking-[0.06em]" style={{ color: 'rgba(240,208,150,.82)', textShadow: '0 1px 5px rgba(0,0,0,.9)' }}>the arena · judged</span>
         </button>
       </div>
 
