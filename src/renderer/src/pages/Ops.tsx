@@ -63,9 +63,13 @@ function Brain({ notes, active }: { notes: number; active: boolean; tempo?: numb
     const N = Math.min(440, 300 + notes * 3)
     const P3 = [...Array(N)].map(() => {
       const t = Math.acos(2 * Math.random() - 1), p = Math.random() * Math.PI * 2
-      const rr = R * Math.cbrt(Math.random())
+      const u = Math.random()
+      const rr = R * Math.cbrt(u)
       return {
         x: rr * Math.sin(t) * Math.cos(p), y: rr * Math.cos(t), z: rr * Math.sin(t) * Math.sin(p),
+        // core: 1 at the very centre of the sphere → 0 at the surface. Drives brightness:
+        // the deeper into the brain, the brighter — more thought concentrated at the core.
+        core: 1 - rr / R,
         star: Math.random() < 0.16, ph: Math.random() * Math.PI * 2, sz: 0.6 + Math.random() * 1.1
       }
     })
@@ -126,20 +130,28 @@ function Brain({ notes, active }: { notes: number; active: boolean; tempo?: numb
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2); ctx.fill()
       }
 
-      // nodes — dim blue majority + scattered bright twinkling stars
+      // nodes — brightness gradient by depth INTO the sphere: core nodes glow bright
+      // white-violet (deep thought), surface nodes stay dim cool blue. Front-back
+      // shading (depth) is a subtler secondary cue for 3D readability.
       for (let i = 0; i < N; i++) {
         const [x, y, depth] = PP[i]
+        const core = P3[i].core                    // 0 surface → 1 centre
+        // colour lerp: dim blue (surface) → near-white violet (core)
+        const cr = Math.round(120 + core * 110)
+        const cg = Math.round(140 + core * 90)
+        const cb = Math.round(215 + core * 40)
+        const lum = 0.14 + core * 0.86             // core drives luminance
         if (P3[i].star) {
           const tw = 0.6 + 0.4 * Math.sin(frame * 0.04 + P3[i].ph)
-          const rad = (1.4 + depth * 2.4) * P3[i].sz
+          const rad = (1.3 + depth * 1.6 + core * 1.8) * P3[i].sz
           const g = ctx.createRadialGradient(x, y, 0, x, y, rad * 3.2)
-          g.addColorStop(0, `rgba(225,230,255,${(0.5 + depth * 0.5) * tw})`)
-          g.addColorStop(0.4, `rgba(160,175,255,${0.3 * depth})`)
-          g.addColorStop(1, 'rgba(160,175,255,0)')
+          g.addColorStop(0, `rgba(${cr},${cg},${cb},${Math.min(1, (0.4 + lum * 0.6) * (0.7 + depth * 0.3)) * tw})`)
+          g.addColorStop(0.4, `rgba(${cr},${cg},${cb},${0.3 * lum})`)
+          g.addColorStop(1, `rgba(${cr},${cg},${cb},0)`)
           ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rad * 3.2, 0, Math.PI * 2); ctx.fill()
         } else {
-          const rad = (0.5 + depth * 1.1) * P3[i].sz
-          ctx.fillStyle = `rgba(150,170,235,${0.18 + depth * 0.5})`
+          const rad = (0.45 + depth * 0.9 + core * 0.9) * P3[i].sz
+          ctx.fillStyle = `rgba(${cr},${cg},${cb},${(lum * (0.55 + depth * 0.45)).toFixed(3)})`
           ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fill()
         }
       }
