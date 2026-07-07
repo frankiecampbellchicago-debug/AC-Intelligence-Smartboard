@@ -2,7 +2,6 @@ import { useStore } from '../store/useStore'
 import { useInbox } from '../store/useInbox'
 import { cn } from '../lib/util'
 import {
-  IconDashboard,
   IconInbox,
   IconLeads,
   IconBook,
@@ -38,7 +37,6 @@ const GROUPS: Group[] = [
     title: 'Command',
     items: [
       { id: 'ops', label: 'Operations System', Svg: IconGlobe },
-      { id: 'dashboard', label: 'Dashboard', Svg: IconDashboard },
       { id: 'sessions', label: 'Session Coach', Svg: IconCheck }
     ]
   },

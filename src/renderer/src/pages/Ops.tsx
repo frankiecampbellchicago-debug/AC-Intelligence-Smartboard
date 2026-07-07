@@ -1,75 +1,116 @@
 import { useEffect, useRef, useState } from 'react'
-import { Card } from '../components/ui'
 import { cn } from '../lib/util'
 import {
-  bridgeOnline, fetchStatus, fetchFleet, fetchVaultTree, fetchVaultFile, fetchBrainFeed,
-  type BridgeStatus, type FleetSite, type VaultNode, type BrainEvent
+  bridgeOnline, fetchStatus, fetchFleet, fetchVaultTree, fetchBrainFeed, fetchSessions,
+  type BridgeStatus, type FleetSite, type BrainEvent, type SessionRow
 } from '../lib/bridge'
 
-/* Aurora particle brain — the center of the system. */
-function Orb({ notes, size = 300 }: { notes: number; size?: number }): React.JSX.Element {
+/* ============================================================
+   THE HUB — one boxless surface. The brain at center is the
+   real mind of the OS: neurons, synapses, live thought-feed.
+   ============================================================ */
+
+const SUBS = [
+  { name: 'Claude Max', cost: 100 },
+  { name: 'Gemini Pro', cost: 20 },
+  { name: 'Perplexity Pro', cost: 20 }
+]
+
+async function getLifetime(): Promise<{ msgs: number; hours: number; sessions: number } | null> {
+  try {
+    const r = await fetch('http://localhost:5177/api/hub/lifetime', { signal: AbortSignal.timeout(120000) })
+    return r.ok ? await r.json() : null
+  } catch { return null }
+}
+async function gradeAll(): Promise<{ running: boolean; done: number; total: number } | null> {
+  try {
+    const r = await fetch('http://localhost:5177/api/hub/grade-all', { method: 'POST', signal: AbortSignal.timeout(8000) })
+    return r.ok ? await r.json() : null
+  } catch { return null }
+}
+
+/* Neural brain — neurons, synapses, firing pulses; tempo follows live activity. */
+function Brain({ notes, active, tempo }: { notes: number; active: boolean; tempo: number }): React.JSX.Element {
   const ref = useRef<HTMLCanvasElement>(null)
+  const stR = useRef({ active, tempo })
+  stR.current = { active, tempo }
   useEffect(() => {
     const canvas = ref.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    const W = (canvas.width = size)
-    const H = (canvas.height = size)
-    const N = Math.min(420, 110 + notes * 3)
-    const R = size * 0.32
+    const S = 460
+    canvas.width = S; canvas.height = S
+    const N = Math.min(150, 70 + notes * 2)
+    const R = S * 0.3
     const pts = [...Array(N)].map(() => {
-      const t = Math.acos(2 * Math.random() - 1)
-      const p = Math.random() * Math.PI * 2
-      return { t, p, r: R + Math.random() * (size * 0.06), s: 0.6 + Math.random() * 1.7 }
+      const t = Math.acos(2 * Math.random() - 1), p = Math.random() * Math.PI * 2
+      return { t, p, r: R * (0.55 + Math.random() * 0.45), s: 0.8 + Math.random() * 1.8, ph: Math.random() * Math.PI * 2 }
     })
+    interface Pulse { a: number; b: number; k: number }
+    let pulses: Pulse[] = []
     let raf = 0, a = 0
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const proj = (pt: (typeof pts)[0], ang: number): [number, number, number] => {
+      const x3 = pt.r * Math.sin(pt.t) * Math.cos(pt.p + ang)
+      const z3 = pt.r * Math.sin(pt.t) * Math.sin(pt.p + ang)
+      const y3 = pt.r * Math.cos(pt.t)
+      return [S / 2 + x3, S / 2 + y3 * 0.9, (z3 + pt.r) / (2 * pt.r)]
+    }
     const draw = (): void => {
-      a += 0.0035
-      ctx.clearRect(0, 0, W, H)
-      for (const pt of pts) {
-        const x3 = pt.r * Math.sin(pt.t) * Math.cos(pt.p + a)
-        const z3 = pt.r * Math.sin(pt.t) * Math.sin(pt.p + a)
-        const y3 = pt.r * Math.cos(pt.t)
-        const depth = (z3 + pt.r) / (2 * pt.r)
-        const hue = depth > 0.6 ? '167,155,255' : depth > 0.3 ? '213,122,232' : '127,227,240'
-        ctx.beginPath()
-        ctx.arc(W / 2 + x3, H / 2 + y3 * 0.92, pt.s * (0.5 + depth), 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(${hue},${0.22 + depth * 0.66})`
-        ctx.fill()
+      const { active: act, tempo: tp } = stR.current
+      a += 0.0028 * (act ? 1.8 : 1)
+      ctx.clearRect(0, 0, S, S)
+      const P = pts.map((pt) => proj(pt, a))
+      /* synapses between near neurons */
+      ctx.lineWidth = 0.6
+      for (let i = 0; i < N; i += 2) for (let j = i + 1; j < Math.min(i + 14, N); j++) {
+        const dx = P[i][0] - P[j][0], dy = P[i][1] - P[j][1], d2 = dx * dx + dy * dy
+        if (d2 < 2600) {
+          const o = (1 - d2 / 2600) * 0.22 * (P[i][2] + P[j][2])
+          ctx.strokeStyle = `rgba(150,140,255,${o})`
+          ctx.beginPath(); ctx.moveTo(P[i][0], P[i][1]); ctx.lineTo(P[j][0], P[j][1]); ctx.stroke()
+        }
       }
+      /* firing pulses along random synapses */
+      if (!reduced && Math.random() < (act ? 0.3 : 0.08) * Math.min(2, tp + 0.5)) {
+        pulses.push({ a: Math.floor(Math.random() * N), b: Math.floor(Math.random() * N), k: 0 })
+      }
+      pulses = pulses.filter((pl) => pl.k < 1)
+      for (const pl of pulses) {
+        pl.k += 0.045
+        const x = P[pl.a][0] + (P[pl.b][0] - P[pl.a][0]) * pl.k
+        const y = P[pl.a][1] + (P[pl.b][1] - P[pl.a][1]) * pl.k
+        const g = ctx.createRadialGradient(x, y, 0, x, y, 7)
+        g.addColorStop(0, 'rgba(213,122,232,.9)'); g.addColorStop(1, 'rgba(213,122,232,0)')
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fill()
+      }
+      /* neurons — breathing */
+      for (let i = 0; i < N; i++) {
+        const [x, y, depth] = P[i]
+        const breathe = 1 + 0.25 * Math.sin(a * 30 + pts[i].ph)
+        const hue = depth > 0.62 ? '167,155,255' : depth > 0.3 ? '213,122,232' : '127,227,240'
+        ctx.beginPath(); ctx.arc(x, y, pts[i].s * (0.5 + depth) * breathe, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(${hue},${0.25 + depth * 0.65})`; ctx.fill()
+      }
+      /* core glow */
+      const cg = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, R * 0.55)
+      cg.addColorStop(0, `rgba(140,110,255,${act ? 0.16 : 0.08})`); cg.addColorStop(1, 'rgba(140,110,255,0)')
+      ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(S / 2, S / 2, R * 0.55, 0, Math.PI * 2); ctx.fill()
       if (!reduced) raf = requestAnimationFrame(draw)
     }
     draw()
     return () => cancelAnimationFrame(raf)
-  }, [notes, size])
-  return <canvas ref={ref} className="mx-auto block" style={{ width: size, height: size }} aria-hidden="true" />
+  }, [notes])
+  return <canvas ref={ref} style={{ width: 460, height: 460, maxWidth: '90vw' }} aria-hidden="true" />
 }
 
-function Dot({ ok }: { ok: boolean | null }): React.JSX.Element {
-  return <span className={cn('inline-block h-2 w-2 rounded-full', ok === null ? 'bg-subtle' : ok ? 'bg-green shadow-[0_0_8px_rgba(62,230,168,.7)]' : 'bg-red shadow-[0_0_8px_rgba(255,107,139,.7)]')} />
-}
-
-function PanelTitle({ children }: { children: React.ReactNode }): React.JSX.Element {
-  return <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-subtle">{children}</div>
-}
-
-function Tree({ nodes, onOpen, depth = 0 }: { nodes: VaultNode[]; onOpen: (p: string) => void; depth?: number }): React.JSX.Element {
+function Stat({ label, value, sub, tint }: { label: string; value: string; sub?: string; tint?: string }): React.JSX.Element {
   return (
-    <div className={cn(depth > 0 && 'ml-2.5 border-l border-border pl-2')}>
-      {nodes.map((n) =>
-        n.type === 'dir' ? (
-          <details key={n.path}>
-            <summary className="cursor-pointer select-none py-0.5 text-[12.5px] font-semibold text-muted hover:text-text">{n.name}/</summary>
-            <Tree nodes={n.children ?? []} onOpen={onOpen} depth={depth + 1} />
-          </details>
-        ) : (
-          <button key={n.path} onClick={() => onOpen(n.path)} className="block w-full truncate rounded px-1 py-0.5 text-left text-[12px] text-subtle transition hover:bg-accent-soft hover:text-text">
-            {n.name}
-          </button>
-        )
-      )}
+    <div>
+      <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-subtle">{label}</div>
+      <div className="font-display tnum mt-1 text-[34px] font-bold leading-none" style={{ color: tint || 'var(--text)' }}>{value}</div>
+      {sub && <div className="mt-1 text-[11.5px] text-muted">{sub}</div>}
     </div>
   )
 }
@@ -79,18 +120,15 @@ export function Ops(): React.JSX.Element {
   const [status, setStatus] = useState<BridgeStatus | null>(null)
   const [fleet, setFleet] = useState<FleetSite[] | null>(null)
   const [notes, setNotes] = useState(0)
-  const [tree, setTree] = useState<VaultNode[]>([])
-  const [file, setFile] = useState<{ path: string; content: string } | null>(null)
+  const [life, setLife] = useState<{ msgs: number; hours: number; sessions: number } | null>(null)
+  const [rows, setRows] = useState<SessionRow[]>([])
+  const [gp, setGp] = useState<{ running: boolean; done: number; total: number } | null>(null)
   const [feed, setFeed] = useState<{ active: boolean; events: BrainEvent[] } | null>(null)
 
   useEffect(() => {
     let stop = false
-    const tick = async (): Promise<void> => {
-      const f = await fetchBrainFeed()
-      if (!stop && f) setFeed(f)
-    }
-    void tick()
-    const iv = setInterval(() => void tick(), 5000)
+    const tick = async (): Promise<void> => { const f = await fetchBrainFeed(); if (!stop && f) setFeed(f) }
+    void tick(); const iv = setInterval(() => void tick(), 5000)
     return () => { stop = true; clearInterval(iv) }
   }, [])
 
@@ -99,136 +137,89 @@ export function Ops(): React.JSX.Element {
       void fetchFleet().then((f) => f && setFleet(f.sites))
       const ok = await bridgeOnline()
       setOnline(ok)
-      if (ok) {
-        void fetchStatus().then(setStatus)
-        void fetchVaultTree().then((t) => { if (t) { setTree(t.tree); setNotes(t.notes) } })
-      }
+      if (!ok) return
+      void fetchStatus().then(setStatus)
+      void fetchVaultTree().then((t) => t && setNotes(t.notes))
+      void getLifetime().then(setLife)
+      void gradeAll().then(setGp)
+      const load = async (): Promise<void> => { const d = await fetchSessions(); if (d) setRows(d.sessions) }
+      void load()
+      const iv = setInterval(() => { void load(); void gradeAll().then(setGp) }, 30000)
+      return () => clearInterval(iv)
     })()
   }, [])
 
+  const graded = rows.filter((r) => r.grade)
+  const avg = graded.length ? Math.round((graded.reduce((a, r) => a + (r.grade?.score ?? 0), 0) / graded.length) * 10) / 10 : null
+  const athenaSpend = (() => { try { const l = JSON.parse(localStorage.getItem('athena-costs') || '{}'); return l[new Date().toISOString().slice(0, 7)] || 0 } catch { return 0 } })()
+  const subTotal = SUBS.reduce((a, s) => a + s.cost, 0)
+  const runs = status?.pulse.runsTotal ?? 0
+  const savedHours = Math.round(runs * 0.25 * 10) / 10
+
   return (
-    <div className="rise-in mx-auto max-w-6xl space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="rise-in relative mx-auto min-h-full max-w-6xl px-8 pb-10 pt-6">
+      {/* crown line */}
+      <div className="flex items-baseline justify-between">
         <div>
           <p className="eyebrow mb-1.5">AC Intelligence</p>
-          <h1 className="font-display text-2xl font-bold text-text">Operations System</h1>
+          <h1 className="font-display text-[26px] font-bold text-text">Operations System</h1>
         </div>
-        <div className="flex items-center gap-2 text-[11px] text-subtle"><Dot ok={online} />{online === null ? 'linking…' : online ? 'bridge online' : 'bridge offline'}</div>
+        <div className="text-[11px] tracking-[0.14em] text-subtle">
+          {online === null ? 'LINKING…' : online ? '◉ BRIDGE ONLINE' : '○ BRIDGE OFFLINE'} · {feed?.active ? 'CLAUDE ACTIVE' : 'CLAUDE IDLE'}
+        </div>
       </div>
 
-      {/* HUD: brain center, systems around it */}
-      <div className="grid gap-4 lg:grid-cols-4">
-        {/* Left rail */}
-        <div className="space-y-4">
-          <Card className="p-4" interactive={false}>
-            <PanelTitle>Live sites</PanelTitle>
-            {fleet ? fleet.map((s) => (
-              <div key={s.name} className="flex items-center gap-2 py-1">
-                <Dot ok={s.ok} />
-                <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-text">{s.name}</span>
-                <span className="tnum text-[10.5px] text-subtle">{s.ok ? `${s.ms}ms` : 'down'}</span>
-              </div>
-            )) : <p className="text-[12px] text-subtle">backend unreachable</p>}
-          </Card>
-          <Card className="p-4" interactive={false}>
-            <PanelTitle>Pulse</PanelTitle>
-            {status ? (
-              <>
-                <div className="tnum font-display text-[26px] font-bold leading-none text-text">{status.pulse.commits7}</div>
-                <div className="text-[10px] uppercase tracking-[0.14em] text-subtle">commits · 7d</div>
-                <div className="mt-2 flex h-8 items-end gap-[3px]">
-                  {status.pulse.commitsPerDay.map((c, i) => (
-                    <div key={i} className="flex-1 rounded-sm bg-gradient-to-t from-[var(--brand-from)] to-[var(--brand-to)]" style={{ height: `${Math.max(8, (c / Math.max(1, ...status.pulse.commitsPerDay)) * 100)}%`, opacity: 0.35 + (c ? 0.65 : 0) }} />
-                  ))}
-                </div>
-                <div className="tnum mt-2 text-[11px] text-muted">{status.pulse.runsTotal} skill runs logged</div>
-              </>
-            ) : <p className="text-[12px] text-subtle">{online ? 'collecting…' : 'needs bridge'}</p>}
-          </Card>
+      {/* ring of stats around the brain — no boxes, one surface */}
+      <div className="mt-2 grid items-center gap-x-10 gap-y-8" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
+        {/* left column */}
+        <div className="flex flex-col gap-9 justify-self-end text-right">
+          <Stat label="Lifetime with Claude" value={life ? life.msgs.toLocaleString() : '—'} sub={life ? `messages · ${life.sessions} sessions` : online ? 'counting…' : 'needs bridge'} />
+          <Stat label="Time in session" value={life ? `${Math.round(life.hours).toLocaleString()}h` : '—'} sub="total session hours" />
+          <Stat label="Claude grade" value={avg !== null ? `${avg}/10` : '—'} tint={avg !== null ? (avg >= 8 ? 'var(--green)' : avg >= 5 ? 'var(--amber)' : 'var(--red)') : undefined}
+            sub={gp?.running ? `auto-grading ${gp.done}/${gp.total}…` : `${graded.length} sessions graded`} />
         </div>
 
-        {/* Brain center — a live look inside Claude Code */}
-        <Card className="flex flex-col items-center p-4 lg:col-span-2" interactive={false}>
-          <div className="mb-1 flex items-center gap-2 self-start">
-            <Dot ok={feed?.active ?? null} />
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-subtle">
-              {feed?.active ? 'Claude active' : 'Claude idle'}
-            </span>
-          </div>
-          <Orb notes={notes || 23} />
-          <div className="-mt-2 mb-2 text-center">
+        {/* THE BRAIN — unboxed, alive */}
+        <div className="relative flex flex-col items-center">
+          <Brain notes={notes || 23} active={feed?.active ?? false} tempo={(feed?.events.length ?? 0) / 6} />
+          <div className="-mt-6 text-center">
             <span className="tnum font-display text-lg font-bold text-text">{notes}</span>
-            <span className="ml-1.5 text-[10px] uppercase tracking-[0.18em] text-subtle">notes in the vault</span>
+            <span className="ml-1.5 text-[10px] uppercase tracking-[0.2em] text-subtle">memories</span>
           </div>
-          <div className="w-full space-y-1 border-t border-border pt-2">
-            {(feed?.events ?? []).slice(-5).map((e, i) => (
-              <div key={i} className="flex items-center gap-2 truncate text-[11px]">
+          {/* live thought-feed */}
+          <div className="mt-3 w-[430px] max-w-[86vw] space-y-1">
+            {(feed?.events ?? []).slice(-3).map((e, i) => (
+              <div key={i} className="flex items-center gap-2 truncate text-[11px] opacity-80">
                 <span className="tnum shrink-0 text-subtle">{e.t}</span>
-                <span className={cn('shrink-0 font-bold uppercase tracking-wide', e.kind === 'tool' ? 'text-cyan' : e.kind === 'user' ? 'text-accent' : 'text-subtle')}>
-                  {e.kind}
-                </span>
+                <span className={cn('shrink-0 font-bold uppercase', e.kind === 'tool' ? 'text-cyan' : e.kind === 'user' ? 'text-accent' : 'text-subtle')}>{e.kind}</span>
                 <span className="truncate text-muted">{e.label}</span>
               </div>
             ))}
-            {!feed?.events?.length && <div className="text-center text-[11px] text-subtle">no recent activity</div>}
           </div>
-        </Card>
+        </div>
 
-        {/* Right rail */}
-        <div className="space-y-4">
-          <Card className="p-4" interactive={false}>
-            <PanelTitle>Freight</PanelTitle>
-            {status?.freight.loggedIn ? status.freight.apps.map((a) => (
-              <div key={a.app} className="flex items-center gap-2 py-1">
-                <Dot ok={a.state === 'Running'} />
-                <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-text">{a.label}</span>
-                <span className="text-[10.5px] text-subtle">{a.state}</span>
-              </div>
-            )) : <p className="text-[12px] text-subtle">{online ? 'az not logged in' : 'needs bridge'}</p>}
-            {status?.freight.lastTriage && (
-              <div className="mt-2 border-t border-border pt-2 text-[11.5px] text-muted">
-                triage <span className={cn('font-semibold', status.freight.lastTriage.verdict.includes('ok') ? 'text-green' : 'text-amber')}>{status.freight.lastTriage.verdict}</span> · {status.freight.lastTriage.when.slice(0, 10)}
-              </div>
-            )}
-          </Card>
-          <Card className="p-4" interactive={false}>
-            <PanelTitle>Activity</PanelTitle>
-            {status ? (
-              <div className="space-y-1.5">
-                {status.claude.wip.slice(0, 2).map((w) => (
-                  <div key={w.project} className="truncate text-[11.5px] text-muted"><span className="font-semibold text-text">{w.project}</span> · wip</div>
-                ))}
-                {status.claude.runs.slice(0, 4).map((r, i) => (
-                  <div key={i} className="truncate text-[11.5px] text-muted"><span className="text-accent">{r.skill}</span> {r.verdict} · {r.when.slice(5, 10)}</div>
-                ))}
-              </div>
-            ) : <p className="text-[12px] text-subtle">{online ? 'collecting…' : 'needs bridge'}</p>}
-          </Card>
+        {/* right column */}
+        <div className="flex flex-col gap-9 justify-self-start">
+          <Stat label="AI spend / month" value={`$${(subTotal + athenaSpend).toFixed(0)}`}
+            sub={`${SUBS.map((s) => `${s.name} $${s.cost}`).join(' · ')} · Athena $${athenaSpend.toFixed(2)}`} />
+          <Stat label="Skill runs" value={String(runs)} sub={`across the agentic OS`} />
+          <Stat label="Est. time saved" value={`${savedHours}h`} sub={`skills automation · ≈$${Math.round(savedHours * 60).toLocaleString()} at $60/h`} tint="var(--green)" />
         </div>
       </div>
 
-      {/* Vault access below the HUD */}
-      {online && (
-        <div className="grid gap-4 lg:grid-cols-4">
-          <Card className="max-h-[300px] overflow-y-auto p-4" interactive={false}>
-            <PanelTitle>Vault</PanelTitle>
-            <Tree nodes={tree} onOpen={(p) => void fetchVaultFile(p).then((f) => f && setFile(f))} />
-          </Card>
-          <Card className="p-4 lg:col-span-3" interactive={false}>
-            {file ? (
-              <>
-                <div className="mb-2 border-b border-border pb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-accent">{file.path}</div>
-                <pre className="max-h-[248px] overflow-auto whitespace-pre-wrap font-[ui-monospace,Menlo,monospace] text-[12px] leading-relaxed text-muted">{file.content}</pre>
-              </>
-            ) : <div className="flex h-full min-h-[100px] items-center justify-center text-[12.5px] text-subtle">Open a note from the vault.</div>}
-          </Card>
+      {/* live sites — a single quiet line, no boxes */}
+      <div className="mt-10 border-t border-border pt-5">
+        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.22em] text-subtle">Live sites</div>
+        <div className="flex flex-wrap gap-x-8 gap-y-2">
+          {fleet ? fleet.map((s) => (
+            <span key={s.name} className="flex items-center gap-2 text-[13px]">
+              <span className={cn('inline-block h-2 w-2 rounded-full', s.ok ? 'bg-green shadow-[0_0_8px_rgba(62,230,168,.7)]' : 'bg-red shadow-[0_0_8px_rgba(255,107,139,.7)]')} />
+              <span className="font-medium text-text">{s.name}</span>
+              <span className="tnum text-[11px] text-subtle">{s.ok ? `${s.ms}ms` : 'down'}</span>
+            </span>
+          )) : <span className="text-[12px] text-subtle">backend unreachable</span>}
         </div>
-      )}
-      {online === false && (
-        <Card className="p-4" interactive={false}>
-          <p className="text-[12.5px] text-muted">Vault, freight and pulse need the bridge on the Mac — it auto-starts at login (launchd), or run <code className="rounded bg-white/[0.06] px-1 text-[11px] text-cyan">node ~/agentic-os/dashboard/server.mjs</code>.</p>
-        </Card>
-      )}
+      </div>
     </div>
   )
 }

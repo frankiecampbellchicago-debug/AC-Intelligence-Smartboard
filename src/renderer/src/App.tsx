@@ -12,7 +12,6 @@ import { cn } from './lib/util'
 import { Hub } from './pages/Hub'
 import { Inbox } from './pages/Inbox'
 import { Leads } from './pages/Leads'
-import { Dashboard } from './pages/Dashboard'
 import { Wizard } from './pages/Wizard'
 import { Projects } from './pages/Projects'
 import { Settings } from './pages/Settings'
@@ -192,7 +191,7 @@ export default function App(): React.JSX.Element {
 
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <Topbar />
+        {view !== 'ops' && view !== 'athena' && <Topbar />}
         <main
           className={cn(
             'min-h-0 flex-1',
@@ -208,7 +207,6 @@ export default function App(): React.JSX.Element {
               {view === 'hub'        && <Hub />}
               {view === 'inbox'      && <Inbox />}
               {view === 'leads'      && <Leads />}
-              {view === 'dashboard'  && <Dashboard />}
               {view === 'wizard'     && <Wizard />}
               {view === 'projects'   && <Projects />}
               {view === 'settings'   && <Settings />}
