@@ -88,13 +88,19 @@ export function Athena(): React.JSX.Element {
     try { const d = JSON.parse(localStorage.getItem('athena-delegators-v3') || 'x'); return Array.isArray(d) ? d : DEFAULTS } catch { return DEFAULTS }
   })
   const [editId, setEditId] = useState('apollo')
-  const [slotSel, setSlotSel] = useState<number | null>(null)
+  const [slotSel, setSlotSel] = useState<number | null>(null)   // armed seat: -1 = core, 0..2 = expert
+  const [held, setHeld] = useState<string | null>(null)          // model picked from the bench, awaiting a seat
+
+  // Pin a delegator's core so auto-promote won't overwrite a hand-chosen operator.
+  function pinDelegator(delegatorId: string): void { pinnedRef.current.add(delegatorId); localStorage.setItem('athena-op-pinned', JSON.stringify([...pinnedRef.current])) }
   const [msgs, setMsgs] = useState<Msg[]>(() => { try { return JSON.parse(localStorage.getItem('athena-chat') || '[]') } catch { return [] } })
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const [bench, setBench] = useState<string[]>(BENCH_SEED)
+  const [flagship, setFlagship] = useState<string>('')      // newest top-ranked operator from live catalog
+  const pinnedRef = useRef<Set<string>>(new Set(JSON.parse(localStorage.getItem('athena-op-pinned') || '[]')))
   const [maxTok, setMaxTok] = useState<number>(() => Number(localStorage.getItem('athena-maxtok')) || 4096)
   useEffect(() => { localStorage.setItem('athena-maxtok', String(maxTok)) }, [maxTok])
   const [stats, setStats] = useState({ day: 0, month: 0, spend: 0, credits: -1 })
@@ -125,9 +131,24 @@ export function Athena(): React.JSX.Element {
         const seen = new Set<string>(); const top: string[] = []
         for (const pfx of prio) { for (const m of ids) { if (m.id.startsWith(pfx) && !seen.has(m.id) && top.length < 24) { seen.add(m.id); top.push(m.id); if (top.filter((t) => t.startsWith(pfx)).length >= 3) break } } }
         if (top.length > 6) setBench(top)
+        // newest top-ranked OPERATOR-grade model (taste/reasoning leaders, newest first)
+        const isOp = (id: string): boolean =>
+          /(opus|fable|sonnet-?5|gpt-5(\.\d)?($|-|\b)|gemini-[\d.]+-pro|grok-4|kimi-k2|deepseek-(v[45]|r\d))/i.test(id) &&
+          !/(haiku|mini|nano|flash|lite|air|codex|embed|instruct-turbo)/i.test(id)
+        const fs = ids.find((m) => isOp(m.id))?.id
+        if (fs) setFlagship(fs)
       } catch { /* keep seed */ }
     })()
   }, [])
+
+  /* Auto-promote: newest flagship fills every un-pinned core seat as it's discovered. */
+  useEffect(() => {
+    if (!flagship) return
+    setDelegators((prev) => {
+      const next = prev.map((d) => (pinnedRef.current.has(d.id) || d.operator === flagship ? d : { ...d, operator: flagship }))
+      return next.some((d, i) => d.operator !== prev[i].operator) ? next : prev
+    })
+  }, [flagship])
 
   useEffect(() => { localStorage.setItem('athena-chat', JSON.stringify(msgs.slice(-60))) }, [msgs])
   useEffect(() => { localStorage.setItem('athena-delegators-v3', JSON.stringify(delegators)) }, [delegators])
@@ -148,8 +169,24 @@ export function Athena(): React.JSX.Element {
   const active = delegators.find((d) => d.id === mode) || null
   const editing = delegators.find((d) => d.id === editId) || delegators[0]
 
-  function setWorker(slot: number, m: string | null): void {
-    setDelegators(delegators.map((d) => d.id === editing.id ? { ...d, workers: d.workers.map((w, i) => (i === slot ? m : w)) } : d))
+  // Place a model into a seat: seat -1 = core/operator, 0..2 = expert.
+  function assign(seat: number, m: string | null): void {
+    setDelegators((prev) => prev.map((d) => {
+      if (d.id !== editing.id) return d
+      if (seat === -1) { pinDelegator(d.id); return { ...d, operator: m ?? d.operator } }
+      return { ...d, workers: d.workers.map((w, i) => (i === seat ? m : w)) }
+    }))
+  }
+  // Click a bench model: if a seat is armed, drop it there; otherwise hold it (toggle).
+  function onBench(id: string): void {
+    if (slotSel !== null) { assign(slotSel, id); setSlotSel(null); setHeld(null) }
+    else setHeld((h) => (h === id ? null : id))
+  }
+  // Click a seat: if holding a model, drop it in; if seat filled, clear it; else arm the seat.
+  function onSeat(seat: number, filled: boolean): void {
+    if (held) { assign(seat, held); setHeld(null); setSlotSel(null) }
+    else if (filled && seat !== -1) { assign(seat, null); setSlotSel(null) }
+    else setSlotSel((s) => (s === seat ? null : seat))
   }
 
   async function send(): Promise<void> {
@@ -328,30 +365,28 @@ export function Athena(): React.JSX.Element {
               {delegators.map((d) => (
                 <button key={d.id} className="rost" style={{ width: 'auto', marginBottom: 0, ...(editId === d.id ? { borderColor: '#e8c95a', color: '#e8c95a' } : {}) }} onClick={() => { setEditId(d.id); setSlotSel(null) }}>{d.name}</button>
               ))}
-              <button className="rost" style={{ width: 'auto', marginBottom: 0 }} onClick={() => setDelegators(DEFAULTS)}>use default</button>
+              <button className="rost" style={{ width: 'auto', marginBottom: 0 }} onClick={() => { pinnedRef.current.clear(); localStorage.removeItem('athena-op-pinned'); setHeld(null); setSlotSel(null); setDelegators(flagship ? DEFAULTS.map((d) => ({ ...d, operator: flagship })) : DEFAULTS) }}>use default</button>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 18, alignItems: 'stretch', flexWrap: 'wrap' }}>
             {/* THE BENCH */}
             <div className="glass" style={{ flex: '1 1 380px', maxWidth: 560, borderRadius: 5, padding: 14 }}>
-              <div className="via">The Bench — click a model, then a seat</div>
+              <div className="via">{held ? `Holding ${short(held)} — click a seat →` : slotSel !== null ? `${slotSel === -1 ? 'Core' : `Expert ${slotSel + 1}`} armed — click a model →` : 'The Bench — click a model, then a seat'}</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 8 }}>
                 {bench.map((id, rank) => {
                   const seat = editing.workers.indexOf(id)
                   const isOp = editing.operator === id
+                  const isHeld = held === id
                   return (
-                    <button key={id} onClick={() => {
-                      const slot = slotSel ?? editing.workers.findIndex((w) => !w)
-                      if (slot >= 0) { setWorker(slot, id); setSlotSel(null) }
-                    }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left', background: 'rgba(10,8,4,.55)', border: `1px solid ${isOp ? '#e8c95a' : seat >= 0 ? '#c9a227' : 'rgba(201,162,39,.25)'}`, borderRadius: 4, padding: '8px 10px', cursor: 'pointer', color: '#efe6d0', fontFamily: 'inherit', position: 'relative' }}>
+                    <button key={id} onClick={() => onBench(id)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left', background: isHeld ? 'rgba(201,162,39,.22)' : 'rgba(10,8,4,.55)', border: `1px solid ${isHeld ? '#fff' : isOp ? '#e8c95a' : seat >= 0 ? '#c9a227' : 'rgba(201,162,39,.25)'}`, borderRadius: 4, padding: '8px 10px', cursor: 'pointer', color: '#efe6d0', fontFamily: 'inherit', position: 'relative', transition: 'border-color .15s, background .15s' }}>
                       <Logo id={id} />
                       <span style={{ minWidth: 0 }}>
                         <span style={{ display: 'block', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{short(id)}</span>
                         <span style={{ display: 'block', fontSize: 9.5, letterSpacing: '.12em', color: '#c9a227' }}>ARENA #{rank + 1}</span>
                       </span>
                       {isOp && <span style={{ position: 'absolute', top: 4, right: 6 }}>👑</span>}
-                      {seat >= 0 && <span style={{ position: 'absolute', top: 4, right: 6, fontSize: 9, border: '1px solid #c9a227', borderRadius: '50%', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e8c95a' }}>{seat + 1}</span>}
+                      {seat >= 0 && !isOp && <span style={{ position: 'absolute', top: 4, right: 6, fontSize: 9, border: '1px solid #c9a227', borderRadius: '50%', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e8c95a' }}>{seat + 1}</span>}
                     </button>
                   )
                 })}
@@ -369,12 +404,15 @@ export function Athena(): React.JSX.Element {
                   const cx = x * 0.93 + 20
                   return <path key={i} d={`M 280 126 C 280 165, ${cx} 158, ${cx} 196`} fill="none" stroke={editing.workers[i] ? 'rgba(232,201,90,.85)' : 'rgba(201,162,39,.3)'} strokeWidth="1.4" strokeDasharray="5 5" />
                 })}
-                {/* CORE — circular logo, white ring, crown above, name below */}
-                <g className="nodecirc" onClick={() => setDelegators(delegators.map((d) => d.id === editing.id ? { ...d, operator: d.operator.includes('opus') ? 'anthropic/claude-sonnet-5' : 'anthropic/claude-opus-4.8' } : d))}>
+                {/* CORE — click to arm/place; holding a model drops it here (and pins it) */}
+                <g className="nodecirc" onClick={() => onSeat(-1, true)} style={{ cursor: 'pointer' }}>
                   <text x="280" y="22" textAnchor="middle" fontSize="15">👑</text>
-                  <circle cx="280" cy="66" r="30" fill="#f7f3e8" />
+                  <circle cx="280" cy="66" r={slotSel === -1 ? 33 : 30} fill="#f7f3e8" stroke={slotSel === -1 ? '#fff' : 'none'} strokeWidth={slotSel === -1 ? 2.5 : 0} />
                   <image href={logoUrl(editing.operator)} x="262" y="48" width="36" height="36" preserveAspectRatio="xMidYMid meet" />
                   <text x="280" y="116" textAnchor="middle" fill="#efe6d0" fontSize="12.5" fontFamily="Palatino,serif">{short(editing.operator)}</text>
+                  {pinnedRef.current.has(editing.id)
+                    ? <text x="280" y="130" textAnchor="middle" fill="#c9a227" fontSize="8" letterSpacing="1.5" fontFamily="Palatino,serif">PINNED</text>
+                    : <text x="280" y="130" textAnchor="middle" fill="#7fb98a" fontSize="8" letterSpacing="1.5" fontFamily="Palatino,serif">AUTO ✦ NEWEST</text>}
                 </g>
                 {/* EXPERTS — circular logos with white rings */}
                 {WXS.map((x, i) => {
@@ -382,18 +420,19 @@ export function Athena(): React.JSX.Element {
                   const w = editing.workers[i]
                   const sel = slotSel === i
                   return (
-                    <g key={i} className="nodecirc" onClick={() => { if (w) { setWorker(i, null); setSlotSel(i) } else setSlotSel(sel ? null : i) }}>
+                    <g key={i} className="nodecirc" onClick={() => onSeat(i, !!w)} style={{ cursor: 'pointer' }}>
                       <text x={cx} y="212" textAnchor="middle" fill="#c9a227" fontSize="9" letterSpacing="2" fontFamily="Palatino,serif">EXPERT {i + 1}</text>
                       {w ? (
                         <>
-                          <circle cx={cx} cy="248" r="27" fill="#f7f3e8" />
+                          <circle cx={cx} cy="248" r={sel ? 30 : 27} fill="#f7f3e8" stroke={sel ? '#fff' : 'none'} strokeWidth={sel ? 2.4 : 0} />
                           <image href={logoUrl(w)} x={cx - 16} y="232" width="32" height="32" preserveAspectRatio="xMidYMid meet" />
                           <text x={cx} y="297" textAnchor="middle" fill="#efe6d0" fontSize="12" fontFamily="Palatino,serif">{short(w)}</text>
+                          {held && <text x={cx} y="248" textAnchor="middle" fill="#8a7420" fontSize="8" letterSpacing="1" fontFamily="Palatino,serif" pointerEvents="none">swap</text>}
                         </>
                       ) : (
                         <>
-                          <circle cx={cx} cy="248" r="27" fill="rgba(10,8,4,.45)" stroke={sel ? '#fff' : 'rgba(255,255,255,.35)'} strokeWidth={sel ? 2.4 : 1.4} strokeDasharray="6 6" />
-                          <text x={cx} y="253" textAnchor="middle" fill="#b9ad92" fontSize="11" fontFamily="Palatino,serif">{sel ? 'choose…' : 'empty'}</text>
+                          <circle cx={cx} cy="248" r={sel || held ? 29 : 27} fill="rgba(10,8,4,.45)" stroke={sel ? '#fff' : held ? 'rgba(232,201,90,.8)' : 'rgba(255,255,255,.35)'} strokeWidth={sel ? 2.4 : 1.4} strokeDasharray="6 6" />
+                          <text x={cx} y="253" textAnchor="middle" fill="#b9ad92" fontSize="11" fontFamily="Palatino,serif">{sel || held ? 'place' : 'empty'}</text>
                         </>
                       )}
                     </g>
