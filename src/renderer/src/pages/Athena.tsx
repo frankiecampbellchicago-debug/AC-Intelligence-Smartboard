@@ -362,10 +362,6 @@ export function Athena(): React.JSX.Element {
               <div style={{ position: 'relative' }}>
               <div className="via" style={{ textAlign: 'center' }}>Core · Orchestrator</div>
               <svg width="100%" height="322" viewBox="0 0 560 322">
-                <defs>
-                  <clipPath id="coreClip"><circle cx="280" cy="66" r="30" /></clipPath>
-                  {WXS.map((x, i) => <clipPath key={i} id={`expClip${i}`}><circle cx={x * 0.93 + 20} cy="248" r="27" /></clipPath>)}
-                </defs>
                 {/* feeds: start below the core name, end above the EXPERT captions */}
                 {WXS.map((x, i) => {
                   const cx = x * 0.93 + 20
@@ -374,9 +370,8 @@ export function Athena(): React.JSX.Element {
                 {/* CORE — circular logo, white ring, crown above, name below */}
                 <g className="nodecirc" onClick={() => setDelegators(delegators.map((d) => d.id === editing.id ? { ...d, operator: d.operator.includes('opus') ? 'anthropic/claude-sonnet-5' : 'anthropic/claude-opus-4.8' } : d))}>
                   <text x="280" y="22" textAnchor="middle" fontSize="15">👑</text>
-                  <circle cx="280" cy="66" r="30" fill="#0d0a05" />
-                  <image href={logoUrl(editing.operator)} x="252" y="38" width="56" height="56" clipPath="url(#coreClip)" preserveAspectRatio="xMidYMid slice" />
-                  <circle cx="280" cy="66" r="30" fill="none" stroke="#ffffff" strokeWidth="2.2" />
+                  <circle cx="280" cy="66" r="30" fill="#f7f3e8" />
+                  <image href={logoUrl(editing.operator)} x="262" y="48" width="36" height="36" preserveAspectRatio="xMidYMid meet" />
                   <text x="280" y="116" textAnchor="middle" fill="#efe6d0" fontSize="12.5" fontFamily="Palatino,serif">{short(editing.operator)}</text>
                 </g>
                 {/* EXPERTS — circular logos with white rings */}
@@ -389,9 +384,8 @@ export function Athena(): React.JSX.Element {
                       <text x={cx} y="212" textAnchor="middle" fill="#c9a227" fontSize="9" letterSpacing="2" fontFamily="Palatino,serif">EXPERT {i + 1}</text>
                       {w ? (
                         <>
-                          <circle cx={cx} cy="248" r="27" fill="#0d0a05" />
-                          <image href={logoUrl(w)} x={cx - 25} y="223" width="50" height="50" clipPath={`url(#expClip${i})`} preserveAspectRatio="xMidYMid slice" />
-                          <circle cx={cx} cy="248" r="27" fill="none" stroke="#ffffff" strokeWidth="2" />
+                          <circle cx={cx} cy="248" r="27" fill="#f7f3e8" />
+                          <image href={logoUrl(w)} x={cx - 16} y="232" width="32" height="32" preserveAspectRatio="xMidYMid meet" />
                           <text x={cx} y="297" textAnchor="middle" fill="#efe6d0" fontSize="12" fontFamily="Palatino,serif">{short(w)}</text>
                         </>
                       ) : (
