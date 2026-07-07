@@ -38,9 +38,10 @@ function Spark({ data, w = 190, h = 26 }: { data: number[]; w?: number; h?: numb
   )
 }
 
-/* The Mind — a calm holographic sphere: a visible rotating wireframe globe with
-   nodes on its surface, chords connecting them through the interior, and slow
-   neuron-lights flowing along those chords. Quickens gently when Claude is active. */
+/* The Mind — a volumetric point-cloud sphere: hundreds of nodes filling a globe,
+   a bright glowing core, scattered bright "stars" among many dim points, and a
+   triangulated web of faint lines connecting near neighbours (fixed in 3D, so the
+   whole graph rotates rigidly). Slow calm rotation with occasional neuron-lights. */
 function Brain({ notes, active }: { notes: number; active: boolean; tempo?: number }): React.JSX.Element {
   const ref = useRef<HTMLCanvasElement>(null)
   const stR = useRef({ active })
@@ -51,103 +52,96 @@ function Brain({ notes, active }: { notes: number; active: boolean; tempo?: numb
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     const dpr = Math.min(2, window.devicePixelRatio || 1)
-    const S = 620
+    const S = 640
     canvas.width = S * dpr; canvas.height = S * dpr
     ctx.scale(dpr, dpr)
     const cx = S / 2, cy = S / 2
-    const R = S * 0.34
+    const R = S * 0.37
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    // project a unit-sphere point (rotated about the vertical axis) to screen
-    const project = (t: number, p: number, a: number): [number, number, number] => {
-      const st = Math.sin(t)
-      const x = R * st * Math.cos(p + a)
-      const z = R * st * Math.sin(p + a)
-      const y = R * Math.cos(t)
-      return [cx + x, cy + y * 0.96, (z + R) / (2 * R)] // depth 0..1 (1 = toward viewer)
+    // 3D nodes filling the sphere volume (uniform → naturally denser core in projection)
+    const N = Math.min(440, 300 + notes * 3)
+    const P3 = [...Array(N)].map(() => {
+      const t = Math.acos(2 * Math.random() - 1), p = Math.random() * Math.PI * 2
+      const rr = R * Math.cbrt(Math.random())
+      return {
+        x: rr * Math.sin(t) * Math.cos(p), y: rr * Math.cos(t), z: rr * Math.sin(t) * Math.sin(p),
+        star: Math.random() < 0.16, ph: Math.random() * Math.PI * 2, sz: 0.6 + Math.random() * 1.1
+      }
+    })
+    // fixed edges: connect each node to its ~4 nearest neighbours (rigid → compute once)
+    const edgeSet = new Set<string>()
+    const edges: [number, number][] = []
+    for (let i = 0; i < N; i++) {
+      const near = P3.map((q, j) => ({ j, d: (P3[i].x - q.x) ** 2 + (P3[i].y - q.y) ** 2 + (P3[i].z - q.z) ** 2 }))
+        .filter((o) => o.j !== i).sort((a, b) => a.d - b.d).slice(0, 4)
+      for (const { j } of near) { const key = i < j ? `${i}-${j}` : `${j}-${i}`; if (!edgeSet.has(key)) { edgeSet.add(key); edges.push([Math.min(i, j), Math.max(i, j)]) } }
     }
 
-    // surface nodes
-    const M = Math.min(64, 34 + notes)
-    const nodes = [...Array(M)].map(() => ({ t: Math.acos(2 * Math.random() - 1), p: Math.random() * Math.PI * 2, ph: Math.random() * Math.PI * 2 }))
-    // fixed chords through the interior — each node linked to 2 others
-    const links: [number, number][] = []
-    for (let i = 0; i < M; i++) { links.push([i, (i + 5) % M]); if (i % 2 === 0) links.push([i, (i + 11) % M]) }
-    // latitude + longitude rings for the wireframe look
-    const RING_PTS = 60
-    const lats = [-0.9, -0.45, 0, 0.45, 0.9].map((c) => Math.acos(c))
-    const lons = [0, 1, 2, 3].map((k) => (k * Math.PI) / 4)
-
-    interface Flow { link: number; k: number }
+    interface Flow { e: number; k: number }
     let flows: Flow[] = []
     let a = 0, raf = 0, frame = 0
 
     const draw = (): void => {
       const { active: act } = stR.current
-      a += 0.0018 * (act ? 1.35 : 1) // calm rotation
+      a += 0.0015 * (act ? 1.3 : 1) // slow, calm
       frame++
+      const ca = Math.cos(a), sa = Math.sin(a)
+      // rotate about vertical axis + project
+      const PP = P3.map((pt) => {
+        const x = pt.x * ca + pt.z * sa
+        const z = -pt.x * sa + pt.z * ca
+        return [cx + x, cy + pt.y * 0.98, (z + R) / (2 * R)] as [number, number, number]
+      })
+
       ctx.clearRect(0, 0, S, S)
 
-      // soft aura
-      const aura = ctx.createRadialGradient(cx, cy, R * 0.4, cx, cy, R * 1.25)
-      aura.addColorStop(0, `rgba(130,110,255,${act ? 0.1 : 0.06})`)
-      aura.addColorStop(1, 'rgba(130,110,255,0)')
-      ctx.fillStyle = aura; ctx.fillRect(0, 0, S, S)
+      // central core glow — the brightest heart of the cloud
+      const beat = 1 + 0.05 * Math.sin(frame * (act ? 0.05 : 0.03))
+      const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.55 * beat)
+      core.addColorStop(0, `rgba(150,165,240,${act ? 0.28 : 0.2})`)
+      core.addColorStop(0.4, 'rgba(120,130,220,0.08)')
+      core.addColorStop(1, 'rgba(120,130,220,0)')
+      ctx.fillStyle = core; ctx.beginPath(); ctx.arc(cx, cy, R * 0.55 * beat, 0, Math.PI * 2); ctx.fill()
 
-      // the visible holographic rim — a clear circle
-      ctx.strokeStyle = 'rgba(150,140,255,.5)'
-      ctx.lineWidth = 1.3
-      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke()
-      ctx.strokeStyle = 'rgba(150,140,255,.14)'
-      ctx.lineWidth = 5
-      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke()
-
-      // wireframe rings (latitude + longitude), depth-shaded so it reads as rotating
-      const ring = (pointAt: (u: number) => [number, number, number]): void => {
-        ctx.lineWidth = 1
-        for (let s = 0; s < RING_PTS; s++) {
-          const [x1, y1, d1] = pointAt((s / RING_PTS) * Math.PI * 2)
-          const [x2, y2, d2] = pointAt(((s + 1) / RING_PTS) * Math.PI * 2)
-          ctx.strokeStyle = `rgba(140,135,255,${0.06 + ((d1 + d2) / 2) * 0.18})`
-          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke()
-        }
-      }
-      lats.forEach((t) => ring((u) => project(t, u, a)))
-      lons.forEach((p0) => ring((u) => project(u, p0, a)))
-
-      // node positions this frame
-      const NP = nodes.map((n) => project(n.t, n.p, a))
-
-      // interior chords — the neuron pathways
-      ctx.lineWidth = 0.8
-      for (const [i, j] of links) {
-        const d = (NP[i][2] + NP[j][2]) / 2
-        ctx.strokeStyle = `rgba(150,140,255,${0.05 + d * 0.14})`
-        ctx.beginPath(); ctx.moveTo(NP[i][0], NP[i][1]); ctx.lineTo(NP[j][0], NP[j][1]); ctx.stroke()
+      // triangulated web — faint blue lines, depth-shaded
+      ctx.lineWidth = 0.7
+      for (const [i, j] of edges) {
+        const d = (PP[i][2] + PP[j][2]) / 2
+        ctx.strokeStyle = `rgba(120,140,220,${0.04 + d * 0.16})`
+        ctx.beginPath(); ctx.moveTo(PP[i][0], PP[i][1]); ctx.lineTo(PP[j][0], PP[j][1]); ctx.stroke()
       }
 
-      // spawn calm neuron-lights
-      if (!reduced && frame % (act ? 26 : 46) === 0) flows.push({ link: Math.floor(Math.random() * links.length), k: 0 })
+      // occasional slow neuron-lights travelling an edge
+      if (!reduced && frame % (act ? 20 : 34) === 0) flows.push({ e: Math.floor(Math.random() * edges.length), k: 0 })
       ctx.globalCompositeOperation = 'lighter'
       flows = flows.filter((f) => f.k < 1)
       for (const f of flows) {
-        f.k += act ? 0.012 : 0.008 // slow, calm travel
-        const [i, j] = links[f.link]
-        const x = NP[i][0] + (NP[j][0] - NP[i][0]) * f.k
-        const y = NP[i][1] + (NP[j][1] - NP[i][1]) * f.k
-        const g = ctx.createRadialGradient(x, y, 0, x, y, 8)
-        g.addColorStop(0, 'rgba(215,205,255,.9)'); g.addColorStop(0.5, 'rgba(160,140,255,.4)'); g.addColorStop(1, 'rgba(160,140,255,0)')
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.fill()
+        f.k += act ? 0.014 : 0.01
+        const [i, j] = edges[f.e]
+        const x = PP[i][0] + (PP[j][0] - PP[i][0]) * f.k
+        const y = PP[i][1] + (PP[j][1] - PP[i][1]) * f.k
+        const g = ctx.createRadialGradient(x, y, 0, x, y, 6)
+        g.addColorStop(0, 'rgba(220,225,255,.85)'); g.addColorStop(1, 'rgba(170,180,255,0)')
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2); ctx.fill()
       }
 
-      // nodes — gentle steady glow
-      for (let i = 0; i < M; i++) {
-        const [x, y, depth] = NP[i]
-        const glow = 0.4 + depth * 0.5 + 0.1 * Math.sin(frame * 0.03 + nodes[i].ph)
-        const rad = 1.4 + depth * 2
-        const g = ctx.createRadialGradient(x, y, 0, x, y, rad * 3)
-        g.addColorStop(0, `rgba(190,200,255,${glow})`); g.addColorStop(1, 'rgba(190,200,255,0)')
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rad * 3, 0, Math.PI * 2); ctx.fill()
+      // nodes — dim blue majority + scattered bright twinkling stars
+      for (let i = 0; i < N; i++) {
+        const [x, y, depth] = PP[i]
+        if (P3[i].star) {
+          const tw = 0.6 + 0.4 * Math.sin(frame * 0.04 + P3[i].ph)
+          const rad = (1.4 + depth * 2.4) * P3[i].sz
+          const g = ctx.createRadialGradient(x, y, 0, x, y, rad * 3.2)
+          g.addColorStop(0, `rgba(225,230,255,${(0.5 + depth * 0.5) * tw})`)
+          g.addColorStop(0.4, `rgba(160,175,255,${0.3 * depth})`)
+          g.addColorStop(1, 'rgba(160,175,255,0)')
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rad * 3.2, 0, Math.PI * 2); ctx.fill()
+        } else {
+          const rad = (0.5 + depth * 1.1) * P3[i].sz
+          ctx.fillStyle = `rgba(150,170,235,${0.18 + depth * 0.5})`
+          ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fill()
+        }
       }
       ctx.globalCompositeOperation = 'source-over'
 
@@ -156,7 +150,7 @@ function Brain({ notes, active }: { notes: number; active: boolean; tempo?: numb
     draw()
     return () => cancelAnimationFrame(raf)
   }, [notes])
-  return <canvas ref={ref} style={{ width: 560, height: 560, maxWidth: '52vw' }} aria-hidden="true" />
+  return <canvas ref={ref} style={{ width: 600, height: 600, maxWidth: '54vw' }} aria-hidden="true" />
 }
 
 function Rule({ label, tag }: { label: string; tag?: string }): React.JSX.Element {
@@ -293,7 +287,7 @@ export function Ops(): React.JSX.Element {
         {/* CENTER — THE MIND */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Brain notes={notes || 23} active={feed?.active ?? false} tempo={(feed?.events.length ?? 0) / 6} />
-          <div style={{ marginTop: -58, textAlign: 'center', position: 'relative' }}>
+          <div style={{ marginTop: -34, textAlign: 'center', position: 'relative' }}>
             <div style={{ fontSize: 10, letterSpacing: '.3em', color: 'var(--text-muted)' }}>PRIMARY DIRECTIVE · CLAUDE MASTERY</div>
             <div className="tnum" style={{ fontSize: 72, fontWeight: 700, lineHeight: 1.05, color: 'var(--text)' }}>
               {avg !== null ? avg.toFixed(1) : '—'}<span style={{ fontSize: 22, color: 'var(--text-muted)', letterSpacing: '.2em' }}> /10</span>
