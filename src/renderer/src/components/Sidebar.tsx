@@ -1,6 +1,8 @@
 import { useStore } from '../store/useStore'
 import { useInbox } from '../store/useInbox'
 import { cn } from '../lib/util'
+import athenaBtn from '../assets/athena-btn.jpg'
+import odinBtn from '../assets/odin-btn.jpg'
 import {
   IconInbox,
   IconLeads,
@@ -126,37 +128,41 @@ export function Sidebar(): React.JSX.Element {
         </div>
       </div>
 
-      {/* ATHENA — deliberately breaks the aurora system: marble + gold. */}
+      {/* ATHENA — Greek temple imagery, marble + gold. */}
       <div className="no-drag px-3 pb-2">
         <button
           onClick={() => setView('athena')}
-          className="w-full rounded-[3px] border px-3 py-2.5 text-left transition duration-200"
+          className="relative w-full overflow-hidden rounded-[4px] border px-3 py-2.5 text-left leading-none transition duration-200"
           style={{
             fontFamily: "'Palatino','Book Antiqua',Georgia,serif",
-            background: view === 'athena' ? 'linear-gradient(180deg,#3a2f10,#1c1608)' : 'linear-gradient(180deg,#1a1610,#0e0c07)',
+            backgroundImage: `linear-gradient(90deg, rgba(10,8,4,.9) 0%, rgba(10,8,4,.66) 55%, rgba(10,8,4,.42) 100%), url(${athenaBtn})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
             borderColor: view === 'athena' ? '#e8c95a' : 'rgba(201,162,39,.4)',
-            boxShadow: view === 'athena' ? '0 0 18px -4px rgba(201,162,39,.5)' : 'none'
+            boxShadow: view === 'athena' ? '0 0 18px -4px rgba(201,162,39,.6)' : 'none'
           }}
         >
-          <span className="block text-[13px] tracking-[0.28em]" style={{ color: '#e8c95a' }}>ATHENA</span>
-          <span className="block text-[8.5px] italic tracking-[0.08em]" style={{ color: 'rgba(226,214,182,.6)' }}>the operator · ΑΘΗΝΑ</span>
+          <span className="block text-[13.5px] tracking-[0.26em]" style={{ color: '#f0d98a', textShadow: '0 1px 6px rgba(0,0,0,.9)' }}>ATHENA</span>
+          <span className="mt-0.5 block text-[8.5px] italic tracking-[0.06em]" style={{ color: 'rgba(240,226,190,.8)', textShadow: '0 1px 5px rgba(0,0,0,.9)' }}>the operator · ΑΘΗΝΑ</span>
         </button>
       </div>
 
-      {/* ODIN — Norse research agent: cold steel + frost-blue, its own world. */}
+      {/* ODIN — Norse runestones + aurora, cold steel + frost-blue. */}
       <div className="no-drag px-3 pb-2">
         <button
           onClick={() => setView('odin')}
-          className="w-full rounded-[3px] border px-3 py-2.5 text-left transition duration-200"
+          className="relative w-full overflow-hidden rounded-[4px] border px-3 py-2.5 text-left leading-none transition duration-200"
           style={{
             fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-            background: view === 'odin' ? 'linear-gradient(180deg,#16314e,#0a1420)' : 'linear-gradient(180deg,#0e1826,#080d15)',
+            backgroundImage: `linear-gradient(90deg, rgba(5,9,15,.9) 0%, rgba(5,9,15,.66) 55%, rgba(5,9,15,.42) 100%), url(${odinBtn})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
             borderColor: view === 'odin' ? '#8fd0ff' : 'rgba(120,160,210,.4)',
-            boxShadow: view === 'odin' ? '0 0 18px -4px rgba(120,180,255,.55)' : 'none'
+            boxShadow: view === 'odin' ? '0 0 18px -4px rgba(120,180,255,.6)' : 'none'
           }}
         >
-          <span className="block text-[13px] font-bold tracking-[0.32em]" style={{ color: '#bcd8f2' }}>ODIN</span>
-          <span className="block text-[8.5px] tracking-[0.12em]" style={{ color: 'rgba(159,192,220,.65)' }}>the seeker · ᛟᛞᛁᚾ</span>
+          <span className="block text-[13.5px] font-bold tracking-[0.28em]" style={{ color: '#cfe6ff', textShadow: '0 1px 6px rgba(0,0,0,.9)' }}>ODIN</span>
+          <span className="mt-0.5 block text-[8.5px] tracking-[0.1em]" style={{ color: 'rgba(190,216,242,.85)', textShadow: '0 1px 5px rgba(0,0,0,.9)' }}>the seeker · ᛟᛞᛁᚾ</span>
         </button>
       </div>
 
