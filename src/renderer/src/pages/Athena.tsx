@@ -44,11 +44,13 @@ function Logo({ id, size = 18 }: { id: string; size?: number }): React.JSX.Eleme
 const BENCH_SEED = ['anthropic/claude-opus-4.8','openai/gpt-5.5','z-ai/glm-5.2','anthropic/claude-sonnet-5','google/gemini-3.1-pro-preview','google/gemini-3.5-flash','x-ai/grok-4','qwen/qwen3-max','deepseek/deepseek-v4','moonshotai/kimi-k2.5','openai/gpt-5.3-codex','anthropic/claude-haiku-4.5','perplexity/sonar-pro','mistralai/mistral-large','meta-llama/llama-4-maverick','minimax/minimax-m2']
 
 interface Delegator { id: string; name: string; operator: string; workers: (string | null)[]; bestFor: string }
+/* Each god paired with the strongest models for its discipline.
+   Operator = the taste/judgment brain; workers = specialists it delegates to. */
 const DEFAULTS: Delegator[] = [
-  { id: 'apollo', name: 'Apollo · Websites', operator: 'anthropic/claude-opus-4.8', bestFor: 'Sites, redesigns, copy', workers: ['openai/gpt-5.3-codex', 'google/gemini-3.1-pro-preview', 'z-ai/glm-4.7'] },
-  { id: 'hephaestus', name: 'Hephaestus · Automations', operator: 'anthropic/claude-opus-4.8', bestFor: 'Functions, scripts, pipelines', workers: ['openai/gpt-5.3-codex', 'deepseek/deepseek-chat-v3.1', 'moonshotai/kimi-k2.5'] },
-  { id: 'delphi', name: 'Delphi · Research', operator: 'anthropic/claude-sonnet-5', bestFor: 'Deep sourced research', workers: ['perplexity/sonar-pro', 'moonshotai/kimi-k2.5', 'google/gemini-3.1-pro-preview'] },
-  { id: 'muses', name: 'Muses · Imagery', operator: 'anthropic/claude-sonnet-5', bestFor: 'Art direction, prompts', workers: ['google/gemini-3.1-pro-preview', 'z-ai/glm-4.7', null] }
+  { id: 'apollo', name: 'Apollo · Websites', operator: 'anthropic/claude-opus-4.8', bestFor: 'Landing pages, redesigns, UI & copy — Opus directs taste, Codex writes the markup, Gemini reviews design & a11y, Sonnet polishes copy', workers: ['openai/gpt-5.3-codex', 'google/gemini-3.1-pro-preview', 'anthropic/claude-sonnet-5'] },
+  { id: 'hephaestus', name: 'Hephaestus · Automations', operator: 'anthropic/claude-opus-4.8', bestFor: 'Functions, scripts, pipelines — Codex drafts, DeepSeek writes tests & edge cases, Kimi reasons through failure modes', workers: ['openai/gpt-5.3-codex', 'deepseek/deepseek-chat-v3.1', 'moonshotai/kimi-k2.5'] },
+  { id: 'delphi', name: 'Delphi · Research', operator: 'anthropic/claude-opus-4.8', bestFor: 'Deep sourced research — Sonar searches the live web, Gemini synthesizes long context, Kimi hunts contradictions', workers: ['perplexity/sonar-pro', 'google/gemini-3.1-pro-preview', 'moonshotai/kimi-k2.5'] },
+  { id: 'muses', name: 'Muses · Imagery', operator: 'anthropic/claude-opus-4.8', bestFor: 'Art direction & image prompts — Opus directs, Gemini (multimodal) crafts detailed prompts, Grok adds creative variety', workers: ['google/gemini-3.1-pro-preview', 'x-ai/grok-4', 'z-ai/glm-4.7'] }
 ]
 
 interface Msg { role: 'user' | 'assistant'; content: string; via?: string; workings?: { model: string; out: string }[] }
@@ -83,7 +85,7 @@ export function Athena(): React.JSX.Element {
   const [effort, setEffort] = useState<'low' | 'medium' | 'high'>('medium')
   const [pickerOpen, setPickerOpen] = useState(false)
   const [delegators, setDelegators] = useState<Delegator[]>(() => {
-    try { const d = JSON.parse(localStorage.getItem('athena-delegators-v2') || 'x'); return Array.isArray(d) ? d : DEFAULTS } catch { return DEFAULTS }
+    try { const d = JSON.parse(localStorage.getItem('athena-delegators-v3') || 'x'); return Array.isArray(d) ? d : DEFAULTS } catch { return DEFAULTS }
   })
   const [editId, setEditId] = useState('apollo')
   const [slotSel, setSlotSel] = useState<number | null>(null)
@@ -128,7 +130,7 @@ export function Athena(): React.JSX.Element {
   }, [])
 
   useEffect(() => { localStorage.setItem('athena-chat', JSON.stringify(msgs.slice(-60))) }, [msgs])
-  useEffect(() => { localStorage.setItem('athena-delegators-v2', JSON.stringify(delegators)) }, [delegators])
+  useEffect(() => { localStorage.setItem('athena-delegators-v3', JSON.stringify(delegators)) }, [delegators])
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, busy])
 
   useEffect(() => {
@@ -216,7 +218,7 @@ export function Athena(): React.JSX.Element {
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
       <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: tab === 'chat'
         ? 'linear-gradient(180deg, rgba(12,9,4,.5), rgba(12,9,4,.62) 55%, rgba(10,8,4,.9))'
-        : 'linear-gradient(180deg, rgba(10,8,5,.84), rgba(10,8,5,.94))' }} />
+        : 'linear-gradient(180deg, rgba(10,8,5,.56), rgba(10,8,5,.72))' }} />
 
       {/* top tab bar */}
       <div className="glass" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, borderLeft: 0, borderRight: 0, borderTop: 0 }}>
@@ -324,7 +326,7 @@ export function Athena(): React.JSX.Element {
             </div>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
               {delegators.map((d) => (
-                <button key={d.id} className="rost" style={{ width: 'auto', marginBottom: 0, ...(editId === d.id ? { borderColor: '#e8c95a', color: '#e8c95a' } : {}) }} onClick={() => { setEditId(d.id); setSlotSel(null) }}>{d.name.split('·')[0].trim()}</button>
+                <button key={d.id} className="rost" style={{ width: 'auto', marginBottom: 0, ...(editId === d.id ? { borderColor: '#e8c95a', color: '#e8c95a' } : {}) }} onClick={() => { setEditId(d.id); setSlotSel(null) }}>{d.name}</button>
               ))}
               <button className="rost" style={{ width: 'auto', marginBottom: 0 }} onClick={() => setDelegators(DEFAULTS)}>use default</button>
             </div>
@@ -357,8 +359,8 @@ export function Athena(): React.JSX.Element {
             </div>
             {/* ORCHESTRATOR GRAPH */}
             <div className="glass" style={{ flex: '1 1 420px', borderRadius: 5, padding: 16, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
-              <img src={olympus} alt="" aria-hidden="true" draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: .55 }} />
-              <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(10,8,4,.55), rgba(10,8,4,.8))' }} />
+              <img src={olympus} alt="" aria-hidden="true" draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: .85 }} />
+              <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(10,8,4,.32), rgba(10,8,4,.58))' }} />
               <div style={{ position: 'relative' }}>
               <div className="via" style={{ textAlign: 'center' }}>Core · Orchestrator</div>
               <svg width="100%" height="322" viewBox="0 0 560 322">
