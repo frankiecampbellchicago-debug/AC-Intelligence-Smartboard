@@ -38,128 +38,125 @@ function Spark({ data, w = 190, h = 26 }: { data: number[]; w?: number; h?: numb
   )
 }
 
-/* The Mind — a dense, roiling holographic orb that reads as a thinking brain:
-   volumetric neuron cloud, turbulent per-node drift, constant synaptic lightning,
-   additive electric glow, breathing core. Tempo swells with live Claude activity. */
-function Brain({ notes, active, tempo }: { notes: number; active: boolean; tempo: number }): React.JSX.Element {
+/* The Mind — a calm holographic sphere: a visible rotating wireframe globe with
+   nodes on its surface, chords connecting them through the interior, and slow
+   neuron-lights flowing along those chords. Quickens gently when Claude is active. */
+function Brain({ notes, active }: { notes: number; active: boolean; tempo?: number }): React.JSX.Element {
   const ref = useRef<HTMLCanvasElement>(null)
-  const stR = useRef({ active, tempo })
-  stR.current = { active, tempo }
+  const stR = useRef({ active })
+  stR.current = { active }
   useEffect(() => {
     const canvas = ref.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     const dpr = Math.min(2, window.devicePixelRatio || 1)
-    const S = 640
+    const S = 620
     canvas.width = S * dpr; canvas.height = S * dpr
     ctx.scale(dpr, dpr)
+    const cx = S / 2, cy = S / 2
+    const R = S * 0.34
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const N = Math.min(460, 260 + notes * 6)
-    const R = S * 0.33
-    /* volumetric fill — points spread THROUGH the sphere, denser toward the core */
-    const pts = [...Array(N)].map(() => {
-      const t = Math.acos(2 * Math.random() - 1), p = Math.random() * Math.PI * 2
-      const rr = R * Math.cbrt(Math.random()) * (0.35 + 0.65 * Math.random())
-      return {
-        t, p, r: rr,
-        vp: (Math.random() - 0.5) * 0.0016,          // individual orbital drift → roil
-        vt: (Math.random() - 0.5) * 0.0012,
-        s: 0.5 + Math.random() * 1.9,
-        ph: Math.random() * Math.PI * 2,
-        depthLayer: rr / R
-      }
-    })
-    interface Pulse { a: number; b: number; k: number; sp: number }
-    let pulses: Pulse[] = []
-    let raf = 0, a = 0
-    const proj = (pt: (typeof pts)[0]): [number, number, number] => {
-      const st = Math.sin(pt.t)
-      const x3 = pt.r * st * Math.cos(pt.p + a)
-      const z3 = pt.r * st * Math.sin(pt.p + a)
-      const y3 = pt.r * Math.cos(pt.t)
-      return [S / 2 + x3, S / 2 + y3 * 0.94, (z3 + pt.r) / (2 * pt.r || 1)]
+
+    // project a unit-sphere point (rotated about the vertical axis) to screen
+    const project = (t: number, p: number, a: number): [number, number, number] => {
+      const st = Math.sin(t)
+      const x = R * st * Math.cos(p + a)
+      const z = R * st * Math.sin(p + a)
+      const y = R * Math.cos(t)
+      return [cx + x, cy + y * 0.96, (z + R) / (2 * R)] // depth 0..1 (1 = toward viewer)
     }
+
+    // surface nodes
+    const M = Math.min(64, 34 + notes)
+    const nodes = [...Array(M)].map(() => ({ t: Math.acos(2 * Math.random() - 1), p: Math.random() * Math.PI * 2, ph: Math.random() * Math.PI * 2 }))
+    // fixed chords through the interior — each node linked to 2 others
+    const links: [number, number][] = []
+    for (let i = 0; i < M; i++) { links.push([i, (i + 5) % M]); if (i % 2 === 0) links.push([i, (i + 11) % M]) }
+    // latitude + longitude rings for the wireframe look
+    const RING_PTS = 60
+    const lats = [-0.9, -0.45, 0, 0.45, 0.9].map((c) => Math.acos(c))
+    const lons = [0, 1, 2, 3].map((k) => (k * Math.PI) / 4)
+
+    interface Flow { link: number; k: number }
+    let flows: Flow[] = []
+    let a = 0, raf = 0, frame = 0
+
     const draw = (): void => {
-      const { active: act, tempo: tp } = stR.current
-      const spin = 0.0022 * (act ? 2.1 : 1)
-      a += spin
-      /* turbulent per-node drift so the cloud roils rather than rigidly spinning */
-      for (const pt of pts) { pt.p += pt.vp * (act ? 1.7 : 1); pt.t += pt.vt; if (pt.t < 0.1) pt.t = 0.1; if (pt.t > Math.PI - 0.1) pt.t = Math.PI - 0.1 }
-
+      const { active: act } = stR.current
+      a += 0.0018 * (act ? 1.35 : 1) // calm rotation
+      frame++
       ctx.clearRect(0, 0, S, S)
-      const P = pts.map(proj)
 
-      /* outer aura */
-      const aura = ctx.createRadialGradient(S / 2, S / 2, R * 0.2, S / 2, S / 2, R * 1.15)
-      aura.addColorStop(0, `rgba(120,95,255,${act ? 0.13 : 0.07})`)
-      aura.addColorStop(0.6, 'rgba(120,95,255,0.03)')
-      aura.addColorStop(1, 'rgba(120,95,255,0)')
+      // soft aura
+      const aura = ctx.createRadialGradient(cx, cy, R * 0.4, cx, cy, R * 1.25)
+      aura.addColorStop(0, `rgba(130,110,255,${act ? 0.1 : 0.06})`)
+      aura.addColorStop(1, 'rgba(130,110,255,0)')
       ctx.fillStyle = aura; ctx.fillRect(0, 0, S, S)
 
-      ctx.globalCompositeOperation = 'lighter'
+      // the visible holographic rim — a clear circle
+      ctx.strokeStyle = 'rgba(150,140,255,.5)'
+      ctx.lineWidth = 1.3
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke()
+      ctx.strokeStyle = 'rgba(150,140,255,.14)'
+      ctx.lineWidth = 5
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke()
 
-      /* synapse web — dense, depth-weighted */
-      ctx.lineWidth = 0.5
-      for (let i = 0; i < N; i++) {
-        for (let j = i + 1; j < Math.min(i + 8, N); j++) {
-          const dx = P[i][0] - P[j][0], dy = P[i][1] - P[j][1], d2 = dx * dx + dy * dy
-          if (d2 < 2000) {
-            const o = (1 - d2 / 2000) * 0.16 * (P[i][2] + P[j][2])
-            ctx.strokeStyle = `rgba(150,140,255,${o})`
-            ctx.beginPath(); ctx.moveTo(P[i][0], P[i][1]); ctx.lineTo(P[j][0], P[j][1]); ctx.stroke()
-          }
+      // wireframe rings (latitude + longitude), depth-shaded so it reads as rotating
+      const ring = (pointAt: (u: number) => [number, number, number]): void => {
+        ctx.lineWidth = 1
+        for (let s = 0; s < RING_PTS; s++) {
+          const [x1, y1, d1] = pointAt((s / RING_PTS) * Math.PI * 2)
+          const [x2, y2, d2] = pointAt(((s + 1) / RING_PTS) * Math.PI * 2)
+          ctx.strokeStyle = `rgba(140,135,255,${0.06 + ((d1 + d2) / 2) * 0.18})`
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke()
         }
       }
+      lats.forEach((t) => ring((u) => project(t, u, a)))
+      lons.forEach((p0) => ring((u) => project(u, p0, a)))
 
-      /* constant synaptic firing — many concurrent, faster when active */
-      const fire = (act ? 1.4 : 0.6) * Math.min(2.2, tp + 0.7)
-      if (!reduced) for (let k = 0; k < 4; k++) if (Math.random() < fire) {
-        const aI = Math.floor(Math.random() * N)
-        pulses.push({ a: aI, b: (aI + 1 + Math.floor(Math.random() * 12)) % N, k: 0, sp: 0.05 + Math.random() * 0.05 })
-      }
-      pulses = pulses.filter((pl) => pl.k < 1)
-      for (const pl of pulses) {
-        pl.k += pl.sp
-        const x = P[pl.a][0] + (P[pl.b][0] - P[pl.a][0]) * pl.k
-        const y = P[pl.a][1] + (P[pl.b][1] - P[pl.a][1]) * pl.k
-        /* bright arc + traveling spark */
-        ctx.strokeStyle = `rgba(200,170,255,${0.5 * (1 - pl.k)})`
-        ctx.lineWidth = 1
-        ctx.beginPath(); ctx.moveTo(P[pl.a][0], P[pl.a][1]); ctx.lineTo(x, y); ctx.stroke()
-        const g = ctx.createRadialGradient(x, y, 0, x, y, 9)
-        g.addColorStop(0, 'rgba(226,200,255,.95)'); g.addColorStop(0.5, 'rgba(213,122,232,.5)'); g.addColorStop(1, 'rgba(213,122,232,0)')
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2); ctx.fill()
+      // node positions this frame
+      const NP = nodes.map((n) => project(n.t, n.p, a))
+
+      // interior chords — the neuron pathways
+      ctx.lineWidth = 0.8
+      for (const [i, j] of links) {
+        const d = (NP[i][2] + NP[j][2]) / 2
+        ctx.strokeStyle = `rgba(150,140,255,${0.05 + d * 0.14})`
+        ctx.beginPath(); ctx.moveTo(NP[i][0], NP[i][1]); ctx.lineTo(NP[j][0], NP[j][1]); ctx.stroke()
       }
 
-      /* neurons — flicker + breathe; brighter near the core, electric near the surface */
-      for (let i = 0; i < N; i++) {
-        const [x, y, depth] = P[i]
-        const flick = 0.7 + 0.3 * Math.sin(a * 45 + pts[i].ph) + (Math.random() < 0.03 ? 0.6 : 0)
-        const core = 1 - pts[i].depthLayer
-        const hue = core > 0.55 ? '190,205,255' : depth > 0.5 ? '167,155,255' : '213,122,232'
-        const rad = pts[i].s * (0.45 + depth * 0.9)
-        const gg = ctx.createRadialGradient(x, y, 0, x, y, rad * 2.6)
-        gg.addColorStop(0, `rgba(${hue},${(0.35 + depth * 0.6) * flick})`)
-        gg.addColorStop(1, `rgba(${hue},0)`)
-        ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(x, y, rad * 2.6, 0, Math.PI * 2); ctx.fill()
+      // spawn calm neuron-lights
+      if (!reduced && frame % (act ? 26 : 46) === 0) flows.push({ link: Math.floor(Math.random() * links.length), k: 0 })
+      ctx.globalCompositeOperation = 'lighter'
+      flows = flows.filter((f) => f.k < 1)
+      for (const f of flows) {
+        f.k += act ? 0.012 : 0.008 // slow, calm travel
+        const [i, j] = links[f.link]
+        const x = NP[i][0] + (NP[j][0] - NP[i][0]) * f.k
+        const y = NP[i][1] + (NP[j][1] - NP[i][1]) * f.k
+        const g = ctx.createRadialGradient(x, y, 0, x, y, 8)
+        g.addColorStop(0, 'rgba(215,205,255,.9)'); g.addColorStop(0.5, 'rgba(160,140,255,.4)'); g.addColorStop(1, 'rgba(160,140,255,0)')
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.fill()
       }
 
-      /* pulsing core — the mind's heartbeat */
-      const beat = 1 + 0.12 * Math.sin(a * (act ? 60 : 34))
-      const cg = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, R * 0.5 * beat)
-      cg.addColorStop(0, `rgba(160,130,255,${(act ? 0.28 : 0.16)})`)
-      cg.addColorStop(0.5, 'rgba(150,110,255,0.06)')
-      cg.addColorStop(1, 'rgba(150,110,255,0)')
-      ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(S / 2, S / 2, R * 0.5 * beat, 0, Math.PI * 2); ctx.fill()
-
+      // nodes — gentle steady glow
+      for (let i = 0; i < M; i++) {
+        const [x, y, depth] = NP[i]
+        const glow = 0.4 + depth * 0.5 + 0.1 * Math.sin(frame * 0.03 + nodes[i].ph)
+        const rad = 1.4 + depth * 2
+        const g = ctx.createRadialGradient(x, y, 0, x, y, rad * 3)
+        g.addColorStop(0, `rgba(190,200,255,${glow})`); g.addColorStop(1, 'rgba(190,200,255,0)')
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rad * 3, 0, Math.PI * 2); ctx.fill()
+      }
       ctx.globalCompositeOperation = 'source-over'
+
       if (!reduced) raf = requestAnimationFrame(draw)
     }
     draw()
     return () => cancelAnimationFrame(raf)
   }, [notes])
-  return <canvas ref={ref} style={{ width: 640, height: 640, maxWidth: '56vw' }} aria-hidden="true" />
+  return <canvas ref={ref} style={{ width: 560, height: 560, maxWidth: '52vw' }} aria-hidden="true" />
 }
 
 function Rule({ label, tag }: { label: string; tag?: string }): React.JSX.Element {
