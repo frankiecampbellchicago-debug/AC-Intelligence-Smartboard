@@ -19,6 +19,7 @@ import { Studio } from './pages/Studio'
 import { Ops } from './pages/Ops'
 import { Sessions } from './pages/Sessions'
 import { Athena } from './pages/Athena'
+import { Odin } from './pages/Odin'
 import ambient from './assets/app-ambient.jpg'
 
 const FULL_BLEED = new Set(['studio'])
@@ -191,7 +192,7 @@ export default function App(): React.JSX.Element {
 
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {view !== 'ops' && view !== 'athena' && <Topbar />}
+        {view !== 'ops' && view !== 'athena' && view !== 'odin' && <Topbar />}
         <main
           className={cn(
             'min-h-0 flex-1',
@@ -214,6 +215,7 @@ export default function App(): React.JSX.Element {
               {view === 'ops'        && <Ops />}
               {view === 'sessions'   && <Sessions />}
               {view === 'athena'     && <Athena />}
+              {view === 'odin'       && <Odin />}
             </>
           )}
         </main>

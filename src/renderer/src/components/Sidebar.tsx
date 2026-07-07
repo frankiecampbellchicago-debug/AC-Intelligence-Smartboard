@@ -27,6 +27,7 @@ type View =
   | 'brain'
   | 'sessions'
   | 'athena'
+  | 'odin'
 
 type Item = { id: View; label: string; Svg: (p: { className?: string }) => React.JSX.Element }
 type Group = { title: string; items: Item[] }
@@ -143,6 +144,23 @@ export function Sidebar(): React.JSX.Element {
         >
           <span className="block text-[13px] tracking-[0.28em]" style={{ color: '#e8c95a' }}>ATHENA</span>
           <span className="block text-[8.5px] italic tracking-[0.08em]" style={{ color: 'rgba(226,214,182,.6)' }}>the operator · ΑΘΗΝΑ</span>
+        </button>
+      </div>
+
+      {/* ODIN — Norse research agent: cold steel + frost-blue, its own world. */}
+      <div className="no-drag px-3 pb-2">
+        <button
+          onClick={() => setView('odin')}
+          className="w-full rounded-[3px] border px-3 py-2.5 text-left transition duration-200"
+          style={{
+            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+            background: view === 'odin' ? 'linear-gradient(180deg,#16314e,#0a1420)' : 'linear-gradient(180deg,#0e1826,#080d15)',
+            borderColor: view === 'odin' ? '#8fd0ff' : 'rgba(120,160,210,.4)',
+            boxShadow: view === 'odin' ? '0 0 18px -4px rgba(120,180,255,.55)' : 'none'
+          }}
+        >
+          <span className="block text-[13px] font-bold tracking-[0.32em]" style={{ color: '#bcd8f2' }}>ODIN</span>
+          <span className="block text-[8.5px] tracking-[0.12em]" style={{ color: 'rgba(159,192,220,.65)' }}>the seeker · ᛟᛞᛁᚾ</span>
         </button>
       </div>
 

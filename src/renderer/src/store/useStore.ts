@@ -19,6 +19,7 @@ type View =
   | 'brain'
   | 'sessions'
   | 'athena'
+  | 'odin'
 
 export interface NewProjectInput {
   name: string
