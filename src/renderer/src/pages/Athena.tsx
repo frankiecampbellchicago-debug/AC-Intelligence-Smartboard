@@ -410,9 +410,6 @@ export function Athena(): React.JSX.Element {
                   <circle cx="280" cy="66" r={slotSel === -1 ? 33 : 30} fill="#f7f3e8" stroke={slotSel === -1 ? '#fff' : 'none'} strokeWidth={slotSel === -1 ? 2.5 : 0} />
                   <image href={logoUrl(editing.operator)} x="262" y="48" width="36" height="36" preserveAspectRatio="xMidYMid meet" />
                   <text x="280" y="116" textAnchor="middle" fill="#efe6d0" fontSize="12.5" fontFamily="Palatino,serif">{short(editing.operator)}</text>
-                  {pinnedRef.current.has(editing.id)
-                    ? <text x="280" y="130" textAnchor="middle" fill="#c9a227" fontSize="8" letterSpacing="1.5" fontFamily="Palatino,serif">PINNED</text>
-                    : <text x="280" y="130" textAnchor="middle" fill="#7fb98a" fontSize="8" letterSpacing="1.5" fontFamily="Palatino,serif">AUTO ✦ NEWEST</text>}
                 </g>
                 {/* EXPERTS — circular logos with white rings */}
                 {WXS.map((x, i) => {
