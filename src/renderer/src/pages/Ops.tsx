@@ -38,7 +38,9 @@ function Spark({ data, w = 190, h = 26 }: { data: number[]; w?: number; h?: numb
   )
 }
 
-/* Neural brain — synapses, firing pulses, tempo follows live Claude activity. */
+/* The Mind — a dense, roiling holographic orb that reads as a thinking brain:
+   volumetric neuron cloud, turbulent per-node drift, constant synaptic lightning,
+   additive electric glow, breathing core. Tempo swells with live Claude activity. */
 function Brain({ notes, active, tempo }: { notes: number; active: boolean; tempo: number }): React.JSX.Element {
   const ref = useRef<HTMLCanvasElement>(null)
   const stR = useRef({ active, tempo })
@@ -48,66 +50,116 @@ function Brain({ notes, active, tempo }: { notes: number; active: boolean; tempo
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    const S = 520
-    canvas.width = S; canvas.height = S
-    const N = Math.min(170, 80 + notes * 2)
-    const R = S * 0.31
+    const dpr = Math.min(2, window.devicePixelRatio || 1)
+    const S = 640
+    canvas.width = S * dpr; canvas.height = S * dpr
+    ctx.scale(dpr, dpr)
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const N = Math.min(460, 260 + notes * 6)
+    const R = S * 0.33
+    /* volumetric fill — points spread THROUGH the sphere, denser toward the core */
     const pts = [...Array(N)].map(() => {
       const t = Math.acos(2 * Math.random() - 1), p = Math.random() * Math.PI * 2
-      return { t, p, r: R * (0.5 + Math.random() * 0.5), s: 0.8 + Math.random() * 1.8, ph: Math.random() * Math.PI * 2 }
+      const rr = R * Math.cbrt(Math.random()) * (0.35 + 0.65 * Math.random())
+      return {
+        t, p, r: rr,
+        vp: (Math.random() - 0.5) * 0.0016,          // individual orbital drift → roil
+        vt: (Math.random() - 0.5) * 0.0012,
+        s: 0.5 + Math.random() * 1.9,
+        ph: Math.random() * Math.PI * 2,
+        depthLayer: rr / R
+      }
     })
-    interface Pulse { a: number; b: number; k: number }
+    interface Pulse { a: number; b: number; k: number; sp: number }
     let pulses: Pulse[] = []
     let raf = 0, a = 0
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const proj = (pt: (typeof pts)[0], ang: number): [number, number, number] => {
-      const x3 = pt.r * Math.sin(pt.t) * Math.cos(pt.p + ang)
-      const z3 = pt.r * Math.sin(pt.t) * Math.sin(pt.p + ang)
+    const proj = (pt: (typeof pts)[0]): [number, number, number] => {
+      const st = Math.sin(pt.t)
+      const x3 = pt.r * st * Math.cos(pt.p + a)
+      const z3 = pt.r * st * Math.sin(pt.p + a)
       const y3 = pt.r * Math.cos(pt.t)
-      return [S / 2 + x3, S / 2 + y3 * 0.92, (z3 + pt.r) / (2 * pt.r)]
+      return [S / 2 + x3, S / 2 + y3 * 0.94, (z3 + pt.r) / (2 * pt.r || 1)]
     }
     const draw = (): void => {
       const { active: act, tempo: tp } = stR.current
-      a += 0.0026 * (act ? 1.9 : 1)
+      const spin = 0.0022 * (act ? 2.1 : 1)
+      a += spin
+      /* turbulent per-node drift so the cloud roils rather than rigidly spinning */
+      for (const pt of pts) { pt.p += pt.vp * (act ? 1.7 : 1); pt.t += pt.vt; if (pt.t < 0.1) pt.t = 0.1; if (pt.t > Math.PI - 0.1) pt.t = Math.PI - 0.1 }
+
       ctx.clearRect(0, 0, S, S)
-      const P = pts.map((pt) => proj(pt, a))
-      ctx.lineWidth = 0.6
-      for (let i = 0; i < N; i += 2) for (let j = i + 1; j < Math.min(i + 15, N); j++) {
-        const dx = P[i][0] - P[j][0], dy = P[i][1] - P[j][1], d2 = dx * dx + dy * dy
-        if (d2 < 2800) {
-          const o = (1 - d2 / 2800) * 0.24 * (P[i][2] + P[j][2])
-          ctx.strokeStyle = `rgba(150,140,255,${o})`
-          ctx.beginPath(); ctx.moveTo(P[i][0], P[i][1]); ctx.lineTo(P[j][0], P[j][1]); ctx.stroke()
+      const P = pts.map(proj)
+
+      /* outer aura */
+      const aura = ctx.createRadialGradient(S / 2, S / 2, R * 0.2, S / 2, S / 2, R * 1.15)
+      aura.addColorStop(0, `rgba(120,95,255,${act ? 0.13 : 0.07})`)
+      aura.addColorStop(0.6, 'rgba(120,95,255,0.03)')
+      aura.addColorStop(1, 'rgba(120,95,255,0)')
+      ctx.fillStyle = aura; ctx.fillRect(0, 0, S, S)
+
+      ctx.globalCompositeOperation = 'lighter'
+
+      /* synapse web — dense, depth-weighted */
+      ctx.lineWidth = 0.5
+      for (let i = 0; i < N; i++) {
+        for (let j = i + 1; j < Math.min(i + 8, N); j++) {
+          const dx = P[i][0] - P[j][0], dy = P[i][1] - P[j][1], d2 = dx * dx + dy * dy
+          if (d2 < 2000) {
+            const o = (1 - d2 / 2000) * 0.16 * (P[i][2] + P[j][2])
+            ctx.strokeStyle = `rgba(150,140,255,${o})`
+            ctx.beginPath(); ctx.moveTo(P[i][0], P[i][1]); ctx.lineTo(P[j][0], P[j][1]); ctx.stroke()
+          }
         }
       }
-      if (!reduced && Math.random() < (act ? 0.32 : 0.09) * Math.min(2, tp + 0.5)) {
-        pulses.push({ a: Math.floor(Math.random() * N), b: Math.floor(Math.random() * N), k: 0 })
+
+      /* constant synaptic firing — many concurrent, faster when active */
+      const fire = (act ? 1.4 : 0.6) * Math.min(2.2, tp + 0.7)
+      if (!reduced) for (let k = 0; k < 4; k++) if (Math.random() < fire) {
+        const aI = Math.floor(Math.random() * N)
+        pulses.push({ a: aI, b: (aI + 1 + Math.floor(Math.random() * 12)) % N, k: 0, sp: 0.05 + Math.random() * 0.05 })
       }
       pulses = pulses.filter((pl) => pl.k < 1)
       for (const pl of pulses) {
-        pl.k += 0.045
+        pl.k += pl.sp
         const x = P[pl.a][0] + (P[pl.b][0] - P[pl.a][0]) * pl.k
         const y = P[pl.a][1] + (P[pl.b][1] - P[pl.a][1]) * pl.k
-        const g = ctx.createRadialGradient(x, y, 0, x, y, 7)
-        g.addColorStop(0, 'rgba(213,122,232,.9)'); g.addColorStop(1, 'rgba(213,122,232,0)')
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fill()
+        /* bright arc + traveling spark */
+        ctx.strokeStyle = `rgba(200,170,255,${0.5 * (1 - pl.k)})`
+        ctx.lineWidth = 1
+        ctx.beginPath(); ctx.moveTo(P[pl.a][0], P[pl.a][1]); ctx.lineTo(x, y); ctx.stroke()
+        const g = ctx.createRadialGradient(x, y, 0, x, y, 9)
+        g.addColorStop(0, 'rgba(226,200,255,.95)'); g.addColorStop(0.5, 'rgba(213,122,232,.5)'); g.addColorStop(1, 'rgba(213,122,232,0)')
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2); ctx.fill()
       }
+
+      /* neurons — flicker + breathe; brighter near the core, electric near the surface */
       for (let i = 0; i < N; i++) {
         const [x, y, depth] = P[i]
-        const breathe = 1 + 0.25 * Math.sin(a * 30 + pts[i].ph)
-        const hue = depth > 0.62 ? '167,155,255' : depth > 0.3 ? '213,122,232' : '190,200,255'
-        ctx.beginPath(); ctx.arc(x, y, pts[i].s * (0.5 + depth) * breathe, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(${hue},${0.25 + depth * 0.68})`; ctx.fill()
+        const flick = 0.7 + 0.3 * Math.sin(a * 45 + pts[i].ph) + (Math.random() < 0.03 ? 0.6 : 0)
+        const core = 1 - pts[i].depthLayer
+        const hue = core > 0.55 ? '190,205,255' : depth > 0.5 ? '167,155,255' : '213,122,232'
+        const rad = pts[i].s * (0.45 + depth * 0.9)
+        const gg = ctx.createRadialGradient(x, y, 0, x, y, rad * 2.6)
+        gg.addColorStop(0, `rgba(${hue},${(0.35 + depth * 0.6) * flick})`)
+        gg.addColorStop(1, `rgba(${hue},0)`)
+        ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(x, y, rad * 2.6, 0, Math.PI * 2); ctx.fill()
       }
-      const cg = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, R * 0.6)
-      cg.addColorStop(0, `rgba(140,110,255,${act ? 0.17 : 0.08})`); cg.addColorStop(1, 'rgba(140,110,255,0)')
-      ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(S / 2, S / 2, R * 0.6, 0, Math.PI * 2); ctx.fill()
+
+      /* pulsing core — the mind's heartbeat */
+      const beat = 1 + 0.12 * Math.sin(a * (act ? 60 : 34))
+      const cg = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, R * 0.5 * beat)
+      cg.addColorStop(0, `rgba(160,130,255,${(act ? 0.28 : 0.16)})`)
+      cg.addColorStop(0.5, 'rgba(150,110,255,0.06)')
+      cg.addColorStop(1, 'rgba(150,110,255,0)')
+      ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(S / 2, S / 2, R * 0.5 * beat, 0, Math.PI * 2); ctx.fill()
+
+      ctx.globalCompositeOperation = 'source-over'
       if (!reduced) raf = requestAnimationFrame(draw)
     }
     draw()
     return () => cancelAnimationFrame(raf)
   }, [notes])
-  return <canvas ref={ref} style={{ width: 520, height: 520, maxWidth: '46vw' }} aria-hidden="true" />
+  return <canvas ref={ref} style={{ width: 640, height: 640, maxWidth: '56vw' }} aria-hidden="true" />
 }
 
 function Rule({ label, tag }: { label: string; tag?: string }): React.JSX.Element {
@@ -207,8 +259,8 @@ export function Ops(): React.JSX.Element {
       {/* header row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: '.42em', color: 'var(--text)' }}>A.C.O.S.</div>
-          <div style={{ fontSize: 9.5, letterSpacing: '.3em', color: 'var(--text-subtle)' }}>AMARO·CAMPBELL OPERATIONS SYSTEM</div>
+          <div style={{ fontSize: 21, fontWeight: 700, letterSpacing: '.1em', color: 'var(--text)', lineHeight: 1 }}>A.C.O.S.</div>
+          <div style={{ fontSize: 8, letterSpacing: '.18em', color: 'var(--text-subtle)', marginTop: 3 }}>AMARO·CAMPBELL OPERATIONS SYSTEM</div>
         </div>
         <div style={{ fontSize: 10.5, letterSpacing: '.24em', color: 'var(--text-muted)', paddingTop: 14 }}>
           <span style={{ color: feed?.active ? 'var(--green)' : 'var(--text-subtle)' }}>• CORE · {feed?.active ? 'ACTIVE' : 'IDLE'}</span>
@@ -244,7 +296,7 @@ export function Ops(): React.JSX.Element {
         {/* CENTER — THE MIND */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Brain notes={notes || 23} active={feed?.active ?? false} tempo={(feed?.events.length ?? 0) / 6} />
-          <div style={{ marginTop: -30, textAlign: 'center' }}>
+          <div style={{ marginTop: -58, textAlign: 'center', position: 'relative' }}>
             <div style={{ fontSize: 10, letterSpacing: '.3em', color: 'var(--text-muted)' }}>PRIMARY DIRECTIVE · CLAUDE MASTERY</div>
             <div className="tnum" style={{ fontSize: 72, fontWeight: 700, lineHeight: 1.05, color: 'var(--text)' }}>
               {avg !== null ? avg.toFixed(1) : '—'}<span style={{ fontSize: 22, color: 'var(--text-muted)', letterSpacing: '.2em' }}> /10</span>
