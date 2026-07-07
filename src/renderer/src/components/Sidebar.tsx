@@ -48,10 +48,6 @@ const GROUPS: Group[] = [
       { id: 'leads', label: 'Leads', Svg: IconLeads },
       { id: 'hub', label: 'GitHub', Svg: IconGithub }
     ]
-  },
-  {
-    title: 'Library',
-    items: [{ id: 'wizard', label: 'Cookbook', Svg: IconBook }]
   }
 ]
 
@@ -187,8 +183,14 @@ export function Sidebar(): React.JSX.Element {
         ))}
       </nav>
 
-      {/* Settings + user card */}
+      {/* Cookbook + Settings + user card */}
       <div className="no-drag space-y-1 px-3 pb-4 pt-2">
+        <NavRow
+          label="Cookbook"
+          Svg={IconBook}
+          active={view === 'wizard'}
+          onClick={() => setView('wizard')}
+        />
         <NavRow
           label="Settings"
           Svg={IconSettings}
